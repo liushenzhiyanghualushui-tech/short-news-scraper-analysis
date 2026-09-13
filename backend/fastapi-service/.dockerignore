@@ -1,0 +1,70 @@
+# ============================================
+# FastAPI 服务 .dockerignore
+# ============================================
+
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info
+*.egg
+*.manifest
+
+# 测试
+pytest_cache/
+.pytest_cache/
+tests/
+test/
+*_test.py
+*_tests.py
+
+# 文档
+*.md
+README*
+LICENSE
+docs/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.iws
+
+# 日志
+logs/
+*.log
+
+# 虚拟环境
+.venv/
+venv/
+ENV/
+env/
+
+# Docker 相关（在 docker-compose 中配置）
+.dockerignore
+Dockerfile
+
+# 本地配置
+.env
+.env.*
+config.json
+secrets.json
+
+# 模型文件（使用 volume 挂载）
+saved_models/
+pretrained/
+*.pkl
+*.pt
+*.h5
+
+# 临时文件
+tmp/
+temp/
+.cache/
+*.tmp

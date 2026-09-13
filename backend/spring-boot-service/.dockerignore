@@ -1,0 +1,65 @@
+# ============================================
+# Spring Boot 服务 .dockerignore
+# ============================================
+
+# Git
+.git
+.gitignore
+
+# Maven 目标目录（不复制，因为会重新构建）
+# 注意：Dockerfile 中会重新构建，所以这里不需要排除 target
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+
+# 日志
+logs/
+*.log
+
+# 临时文件
+tmp/
+temp/
+.cache/
+*.tmp
+*.bak
+
+# 文档
+*.md
+README*
+LICENSE
+docs/
+
+# Docker 相关
+.dockerignore
+Dockerfile
+docker-compose*.yml
+
+# 本地配置
+.env
+.env.*
+application-local.yml
+application-local.yaml
+application-dev.yml
+application-dev.yaml
+application-prod.yml
+application-prod.yaml
+
+# Spring Boot 配置文件（敏感）
+src/main/resources/application-local.properties
+src/main/resources/application-local.yml
+src/main/resources/application-dev.properties
+src/main/resources/application-dev.yml
+src/main/resources/application-prod.properties
+src/main/resources/application-prod.yml
+
+# 构建产物（重新构建）
+# target/
+
+# IDE 配置
+.project
+.classpath
+.settings/

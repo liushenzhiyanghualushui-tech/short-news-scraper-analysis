@@ -1,0 +1,72 @@
+# ============================================
+# 短新闻爬取与分析系统 - Git 属性配置
+# ============================================
+
+# ============================================
+# 二进制文件处理
+# ============================================
+
+# 图片文件 - 不进行行尾转换
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.webp binary
+*.svg  binary
+
+# 压缩文件 - 不进行行尾转换
+*.zip  binary
+*.tar  binary
+*.gz   binary
+*.rar  binary
+*.7z   binary
+
+# 模型文件 - 不进行行尾转换
+*.h5   binary
+*.pkl  binary
+*.pickle binary
+*.pt   binary
+*.pth  binary
+*.onnx binary
+*.bin  binary
+
+# 证书密钥 - 不进行行尾转换
+*.pem  binary
+*.key  binary
+*.crt  binary
+*.jks  binary
+*.p12  binary
+*.pfx  binary
+
+# 数据库文件 - 不进行行尾转换
+*.db   binary
+*.sqlite binary
+*.sqlite3 binary
+
+# Jar 文件 - 不进行行尾转换
+*.jar  binary
+
+# ============================================
+# 文件合并策略
+# ============================================
+
+# YAML 文件使用 union 合并
+*.yml  merge=yaml
+*.yaml merge=yaml
+
+# JSON 文件使用 union 合并
+*.json merge=union
+
+# ============================================
+# 差分工具配置
+# ============================================
+
+# Python 文件使用特定 diff 工具
+*.py   diff=python
+
+# SQL 文件格式化
+*.sql  diff=sql
+
+# Markdown 文件允许展示更多上下文
+*.md   diff=markdown

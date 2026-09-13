@@ -1,9 +1,9 @@
-version: "3.9"
-
 # ============================================
 # 短新闻爬取与分析系统 - Docker Compose 编排
-# 服务: MySQL + FastAPI + Spring Boot + Vue/Nginx
+# 一键启动完整系统（MySQL + FastAPI + Spring Boot + Vue/Nginx）
 # ============================================
+
+version: "3.9"
 
 services:
   # ==================== MySQL 数据库 ====================
@@ -16,8 +16,9 @@ services:
       MYSQL_DATABASE: ${MYSQL_DATABASE:-news_scraper}
       MYSQL_USER: ${DB_USERNAME:-newsapp}
       MYSQL_PASSWORD: ${DB_PASSWORD:?请设置 DB_PASSWORD 环境变量}
+      TZ: Asia/Shanghai
     ports:
-      - "3307:3306"
+      - "${MYSQL_EXTERNAL_PORT:-3307}:3306"
     volumes:
       - mysql_data:/var/lib/mysql
       - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
@@ -27,36 +28,50 @@ services:
       - --default-authentication-plugin=mysql_native_password
       - --max_connections=500
       - --wait_timeout=28800
+      - --interactive_timeout=28800
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
       start_period: 30s
     networks:
       - news-network
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
 
   # ==================== FastAPI AI/爬虫服务 ====================
   fastapi:
     build:
       context: ./backend/fastapi-service
       dockerfile: Dockerfile
+    image: news-fastapi:latest
     container_name: news-fastapi
     restart: unless-stopped
     environment:
+      # 数据库配置
       - DB_HOST=${DB_HOST:-mysql}
       - DB_PORT=${DB_PORT:-3306}
-      - DB_USER=${DB_USERNAME}
+      - DB_USER=${DB_USERNAME:-newsapp}
       - DB_PASSWORD=${DB_PASSWORD}
-      - DB_NAME=${MYSQL_DATABASE}
+      - DB_NAME=${MYSQL_DATABASE:-news_scraper}
+      # 安全配置
       - API_KEY=${FASTAPI_API_KEY:?请设置 FASTAPI_API_KEY 环境变量}
+      # Hugging Face 配置
       - HF_ENDPOINT=${HF_ENDPOINT:-https://hf-mirror.com}
       - HF_MODEL_ID=${HF_MODEL_ID:-bert-base-chinese}
       - HF_TIMEOUT=${HF_TIMEOUT:-120}
+      # Python 环境
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
     ports:
-      - "8000:8000"
+      - "${FASTAPI_EXTERNAL_PORT:-8000}:8000"
     volumes:
-      - ./backend/fastapi-service:/app
       - saved_models:/app/saved_models
     depends_on:
       mysql:
@@ -64,43 +79,67 @@ services:
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
       interval: 15s
-      timeout: 5s
-      retries: 3
-      start_period: 60s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
     networks:
       - news-network
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 1G
 
   # ==================== Spring Boot 业务中台 ====================
   spring-boot:
     build:
       context: ./backend/spring-boot-service
       dockerfile: Dockerfile
+    image: news-springboot:latest
     container_name: news-springboot
     restart: unless-stopped
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:mysql://${DB_HOST:-mysql}:${DB_PORT:-3306}/${MYSQL_DATABASE:-news_scraper}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8mb4&connectionAttributes=none
-      - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
+      # 数据源配置
+      - SPRING_DATASOURCE_URL=jdbc:mysql://${DB_HOST:-mysql}:${DB_PORT:-3306}/${MYSQL_DATABASE:-news_scraper}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8mb4&connectionAttributes=none&connectTimeout=30000&socketTimeout=60000
+      - SPRING_DATASOURCE_USERNAME=${DB_USERNAME:-newsapp}
       - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
       - SPRING_DATASOURCE_DRIVER_CLASS_NAME=com.mysql.cj.jdbc.Driver
+      # 连接池配置
+      - SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE=20
+      - SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE=5
+      - SPRING_DATASOURCE_HIKARI_CONNECTION_TIMEOUT=30000
+      - SPRING_DATASOURCE_HIKARI_IDLE_TIMEOUT=600000
+      - SPRING_DATASOURCE_HIKARI_MAX_LIFETIME=1800000
+      # FastAPI 服务配置
       - FASTAPI_BASE_URL=http://fastapi:8000
       - FASTAPI_API_KEY=${FASTAPI_API_KEY}
+      # 安全配置
       - JWT_SECRET=${JWT_SECRET:?请设置 JWT_SECRET 环境变量}
-      - JWT_EXPIRATION=3600
+      - JWT_EXPIRATION=${JWT_EXPIRATION:-3600}
+      # Java 配置
+      - JAVA_OPTS=-Xms512m -Xmx1024m
     ports:
-      - "8080:8080"
+      - "${SPRING_BOOT_EXTERNAL_PORT:-8080}:8080"
     depends_on:
       mysql:
         condition: service_healthy
       fastapi:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
       interval: 15s
-      timeout: 5s
-      retries: 3
-      start_period: 90s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
     networks:
       - news-network
+    deploy:
+      resources:
+        limits:
+          memory: 1.5G
+        reservations:
+          memory: 768M
 
   # ==================== Vue + Nginx 前端 ====================
   frontend:
@@ -108,15 +147,24 @@ services:
       context: ./frontend/vue-frontend
       dockerfile: Dockerfile
       args:
-        - VITE_API_BASE_URL=/api
+        - VITE_API_BASE_URL=${VITE_API_BASE_URL:-/api}
+    image: news-frontend:latest
     container_name: news-frontend
     restart: unless-stopped
     ports:
-      - "3000:80"
+      - "${FRONTEND_EXTERNAL_PORT:-3000}:80"
     depends_on:
       - spring-boot
     networks:
       - news-network
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
+
+# ==================== 网络与存储 ====================
 
 volumes:
   mysql_data:
@@ -127,3 +175,4 @@ volumes:
 networks:
   news-network:
     driver: bridge
+    name: news_app_network

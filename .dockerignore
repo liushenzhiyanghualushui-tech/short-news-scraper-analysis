@@ -1,0 +1,49 @@
+# ============================================
+# 根目录 .dockerignore - Docker 构建时排除的文件
+# ============================================
+
+# Git 相关
+.git
+.gitignore
+.gitattributes
+.gitmodules
+
+# 环境文件（敏感）
+.env
+.env.*
+.env.local
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.iws
+
+# 文档
+*.md
+*.txt
+LICENSE
+README*
+docs/
+*.doc
+*.docx
+
+# 临时文件
+tmp/
+temp/
+*.tmp
+*.bak
+.cache/
+
+# 日志
+logs/
+*.log
+
+# 数据库
+*.db
+*.sqlite
+*.sqlite3
+
+# 其他项目
+frontend/
+backend/

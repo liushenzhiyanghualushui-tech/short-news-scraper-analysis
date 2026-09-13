@@ -1,0 +1,69 @@
+# ============================================
+# Vue 前端 .dockerignore
+# ============================================
+
+# Git
+.git
+.gitignore
+
+# 依赖目录（重新安装）
+node_modules/
+
+# 构建产物（重新构建）
+dist/
+
+# 测试
+tests/
+test/
+__tests__/
+*.spec.ts
+*.spec.js
+*.test.ts
+*.test.js
+
+# 文档
+*.md
+README*
+LICENSE
+docs/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.iws
+
+# 环境文件
+.env
+.env.*
+.env.local
+.env.development
+.env.production
+
+# 临时文件
+tmp/
+temp/
+.cache/
+*.tmp
+*.bak
+
+# 日志
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Docker 相关
+.dockerignore
+Dockerfile
+
+# 其他
+*.local
+.vscode/
+.DS_Store
+Thumbs.db
+
+# 源码文件（用于构建，使用 src 目录）
+# 注意：Vue 构建需要 package.json, vite.config.ts, tsconfig.json 等
+# 所以不排除这些文件
