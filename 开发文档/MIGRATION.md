@@ -284,12 +284,12 @@ Test-Path config.json
 
 ### 4.6 完成条件
 
-- [ ] `app.py` 已删除
-- [ ] `config_tool.py` 已删除
-- [ ] `api/` 目录已删除
-- [ ] `static/` 目录已删除
-- [ ] `templates/` 目录已删除
-- [ ] `config.json` 已删除
+- [x] `app.py` 已删除
+- [x] `config_tool.py` 已删除
+- [x] `api/` 目录已删除
+- [x] `static/` 目录已删除
+- [x] `templates/` 目录已删除
+- [x] `config.json` 已删除
 
 ---
 
@@ -328,9 +328,9 @@ git tag | grep pre-refactor
 
 ### 5.4 完成条件
 
-- [ ] 所有更改已提交
-- [ ] 备份标签已创建
-- [ ] 无未提交的更改
+- [x] 所有更改已提交
+- [x] 备份标签已创建
+- [x] 无未提交的更改
 
 ---
 
