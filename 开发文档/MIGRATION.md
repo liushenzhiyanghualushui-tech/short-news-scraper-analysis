@@ -438,12 +438,12 @@ Get-ChildItem -Path "frontend" -Recurse -Directory | Select-Object FullName
 
 ### 6.5 完成条件
 
-- [ ] `backend/fastapi-service/` 目录存在
-- [ ] `backend/spring-boot-service/` 目录存在
-- [ ] `frontend/vue-frontend/` 目录存在
-- [ ] 根目录无 `fastapi-service/` 目录
-- [ ] 根目录无 `spring-boot-service/` 目录
-- [ ] 根目录无 `vue-frontend/` 目录
+- [x] `backend/fastapi-service/` 目录存在
+- [x] `backend/spring-boot-service/` 目录存在
+- [x] `frontend/vue-frontend/` 目录存在
+- [x] 根目录无 `fastapi-service/` 目录
+- [x] 根目录无 `spring-boot-service/` 目录
+- [x] 根目录无 `vue-frontend/` 目录
 
 ---
 
