@@ -363,8 +363,8 @@ Test-Path frontend
 
 ### 7.4 完成条件
 
-- [ ] `backend/` 目录存在
-- [ ] `frontend/` 目录存在
+- [x] `backend/` 目录存在
+- [x] `frontend/` 目录存在
 
 ---
 
