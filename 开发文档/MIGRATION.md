@@ -5,6 +5,7 @@
 | 版本 | 日期 | 作者 | 变更说明 |
 |------|------|------|----------|
 | 1.0 | 2026-09-13 | AI | 初始迁移计划 |
+| 1.1 | 2026-09-13 | AI | 新增 Docker 一键启动工程化方案，移除遗留启动程序 |
 
 ---
 
@@ -13,13 +14,16 @@
 1. [背景与目标](#1-背景与目标)
 2. [目标目录结构](#2-目标目录结构)
 3. [迁移阶段](#3-迁移阶段)
-4. [阶段一：准备与备份](#4-阶段一准备与备份)
-5. [阶段二：创建模块目录](#5-阶段二创建模块目录)
-6. [阶段三：移动文件](#6-阶段三移动文件)
-7. [阶段四：清理遗留文件](#7-阶段四清理遗留文件)
-8. [阶段五：更新配置文件](#8-阶段五更新配置文件)
-9. [阶段六：验证与测试](#9-阶段六验证与测试)
-10. [回滚方案](#10-回滚方案)
+4. [阶段零：移除遗留启动程序](#4-阶段零移除遗留启动程序)
+5. [阶段一：准备与备份](#5-阶段一准备与备份)
+6. [阶段二：创建模块目录](#6-阶段二创建模块目录)
+7. [阶段三：移动文件](#7-阶段三移动文件)
+8. [阶段四：清理遗留文件](#8-阶段四清理遗留文件)
+9. [阶段五：更新配置文件](#9-阶段五更新配置文件)
+10. [阶段六：验证与测试](#10-阶段六验证与测试)
+11. [一键启动方案](#11-一键启动方案)
+12. [回滚方案](#12-回滚方案)
+13. [附录](#13-附录)
 
 ---
 
@@ -35,6 +39,8 @@
 | **模块边界不清** | `scrapers/` 单独存在，本应整合到 `fastapi-service/` 中 |
 | **根目录文件过多** | 根目录有 `requirements.txt`、`config.json`、`docker-compose.yml` 等多个配置文件 |
 | **工具脚本分散** | `scripts/` 和根目录部分 Python 脚本混杂 |
+| **启动方式不统一** | 需要手动运行 `python app.py` 或 `python config_tool.py`，而非 Docker 一键启动 |
+| **环境依赖混乱** | 本地 Python 环境与 Docker 环境边界不清 |
 
 ### 1.2 迁移目标
 
@@ -47,7 +53,39 @@
 │  3. 便于开发：可独立启动/停止前后端                        │
 │  4. 符合架构：与 docker-compose 部署方案一致               │
 │  5. 便于 CI/CD：每个模块可独立构建镜像                     │
+│  6. 一键启动：通过 Docker Compose 一次性启动所有服务        │
+│  7. 零手动启动：无需手动运行 python app.py 等启动程序       │
 └─────────────────────────────────────────────────────────────┘
+```
+
+### 1.3 工程化目标：零手动启动架构
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                        零手动启动架构                                         │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  用户操作:                                                                   │
+│  ┌─────────────────────────────────────────────────────────────────────┐     │
+│  │  $ docker-compose up -d                                              │     │
+│  │  $ open http://localhost:3000                                        │     │
+│  └─────────────────────────────────────────────────────────────────────┘     │
+│                                    │                                         │
+│                                    ▼                                         │
+│  ┌─────────────────────────────────────────────────────────────────────┐     │
+│  │                      Docker 编排层                                   │     │
+│  │  ┌─────────┐  ┌─────────────┐  ┌──────────────┐  ┌───────────┐     │     │
+│  │  │  MySQL  │  │   FastAPI   │  │  Spring Boot │  │  Vue/Nginx │     │     │
+│  │  │  :3307  │  │    :8000    │  │     :8080    │  │    :3000   │     │     │
+│  │  └─────────┘  └─────────────┘  └──────────────┘  └───────────┘     │     │
+│  └─────────────────────────────────────────────────────────────────────┘     │
+│                                                                              │
+│  无需:                                                                        │
+│  ✗ python app.py                                                             │
+│  ✗ python config_tool.py                                                     │
+│  ✗ python -m uvicorn main:app                                                │
+│  ✗ 手动安装依赖 / 配置环境变量 / 启动数据库                                  │
+└──────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -130,6 +168,7 @@
 
 | 阶段 | 内容 | 风险 | 工时估计 |
 |------|------|------|----------|
+| **Phase 0** | 移除遗留启动程序 | 低 | 5 分钟 |
 | **Phase 1** | 准备与备份 | 低 | 5 分钟 |
 | **Phase 2** | 创建模块目录 | 低 | 2 分钟 |
 | **Phase 3** | 移动文件 | 中 | 10 分钟 |
@@ -144,20 +183,20 @@
 │                           迁移流程                                          │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
-│  Phase 1          Phase 2          Phase 3          Phase 4          Phase 5│
+│  Phase 0          Phase 1          Phase 2          Phase 3          Phase 4│
 │  ┌───────┐       ┌───────┐       ┌───────┐       ┌───────┐       ┌───────┐│
-│  │ 备份  │ ────> │ 创建  │ ────> │ 移动  │ ────> │ 清理  │ ────> │ 更新  ││
-│  │       │       │ 目录  │       │ 文件  │       │ 遗留  │       │ 配置  ││
+│  │ 移除  │ ────> │ 备份  │ ────> │ 创建  │ ────> │ 移动  │ ────> │ 清理  ││
+│  │ 遗留  │       │       │       │ 目录  │       │ 文件  │       │ 遗留  ││
 │  └───────┘       └───────┘       └───────┘       └───────┘       └───────┘│
-│       │                                                   │              ││
-│       │                                                   │              ││
-│       ▼                                                   ▼              ▼│
+│       │               │               │               │               │   │
+│       │               │               │               │               │   │
+│       ▼               ▼               ▼               ▼               ▼   │
 │  ┌───────────────────────────────────────────────────────────────────────┐ │
-│  │                          Phase 6: 验证与测试                            │ │
-│  │   ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐            │ │
-│  │   │ Git 状态 │  │ Docker   │  │ 服务启动 │  │ 功能测试 │            │ │
-│  │   │ 检查     │  │ 构建     │  │ 测试     │  │          │            │ │
-│  │   └──────────┘  └──────────┘  └──────────┘  └──────────┘            │ │
+│  │  Phase 5: 更新配置                                        Phase 6     │ │
+│  │  ┌─────────────┐                                                ┌────┴───┤
+│  │  │ docker-     │                                                │ 验证  │
+│  │  │ compose.yml │                                                │ 测试  │
+│  │  └─────────────┘                                                └───────┘
 │  └───────────────────────────────────────────────────────────────────────┘ │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
@@ -165,13 +204,102 @@
 
 ---
 
-## 4. 阶段一：准备与备份
+## 4. 阶段零：移除遗留启动程序
 
 ### 4.1 目标
 
+移除根目录下的遗留启动程序，使系统完全依赖 Docker 启动，不再需要手动运行 Python 脚本。
+
+### 4.2 需要移除的文件
+
+| 类型 | 路径 | 说明 |
+|------|------|------|
+| **启动脚本** | `app.py` | 旧的 Flask/单体应用启动入口 |
+| **配置工具** | `config_tool.py` | 旧的配置管理工具 |
+| **旧 API 路由** | `api/` | 旧的 Flask API 路由目录 |
+| **旧静态文件** | `static/` | 旧的静态资源目录 |
+| **旧模板** | `templates/` | 旧的 Jinja2 模板目录 |
+| **旧配置** | `config.json` | 旧的配置文件（配置已迁移到 docker-compose.yml） |
+
+### 4.3 执行步骤
+
+```powershell
+# 确认要移除的文件存在
+Get-Item "app.py" -ErrorAction SilentlyContinue
+Get-Item "config_tool.py" -ErrorAction SilentlyContinue
+Get-ChildItem "api" -ErrorAction SilentlyContinue
+Get-ChildItem "static" -ErrorAction SilentlyContinue
+Get-ChildItem "templates" -ErrorAction SilentlyContinue
+
+# 移除遗留文件（确认无误后执行）
+Remove-Item -Path "app.py" -Force -ErrorAction SilentlyContinue
+Remove-Item -Path "config_tool.py" -Force -ErrorAction SilentlyContinue
+Remove-Item -Path "api" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item -Path "static" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item -Path "templates" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item -Path "config.json" -Force -ErrorAction SilentlyContinue
+
+# 清理 Python 缓存
+Remove-Item -Path "__pycache__" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item -Path "*.pyc" -Force -ErrorAction SilentlyContinue
+```
+
+### 4.4 移除后的启动方式
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                          启动方式对比                                         │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  移除前（多步骤、依赖本地环境）:                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐     │
+│  │  $ pip install -r requirements.txt                                   │     │
+│  │  $ python config_tool.py  # 配置数据库                              │     │
+│  │  $ python app.py         # 启动单体应用                            │     │
+│  │  $ docker-compose up -d  # 仅启动 MySQL 等外部依赖                  │     │
+│  └─────────────────────────────────────────────────────────────────────┘     │
+│                                                                              │
+│  移除后（单一命令、Docker 封装）:                                            │
+│  ┌─────────────────────────────────────────────────────────────────────┐     │
+│  │  $ docker-compose up -d        # 启动所有服务                       │     │
+│  │  $ open http://localhost:3000  # 访问前端                          │     │
+│  └─────────────────────────────────────────────────────────────────────┘     │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 4.5 验证方式
+
+```powershell
+# 确认遗留文件已删除
+Test-Path app.py
+Test-Path config_tool.py
+Test-Path api
+Test-Path static
+Test-Path templates
+Test-Path config.json
+
+# 预期输出全部为 False
+```
+
+### 4.6 完成条件
+
+- [ ] `app.py` 已删除
+- [ ] `config_tool.py` 已删除
+- [ ] `api/` 目录已删除
+- [ ] `static/` 目录已删除
+- [ ] `templates/` 目录已删除
+- [ ] `config.json` 已删除
+
+---
+
+## 5. 阶段一：准备与备份
+
+### 5.1 目标
+
 确保所有更改可追溯，创建备份点。
 
-### 4.2 执行步骤
+### 5.2 执行步骤
 
 #### 步骤 1.1：提交当前状态
 
@@ -191,14 +319,14 @@ git commit -m "chore: 迁移前的最后提交
 git tag -a pre-refactor-20260913 -m "重构前的备份点"
 ```
 
-### 4.3 验证方式
+### 5.3 验证方式
 
 ```powershell
 git log --oneline -1
 git tag | grep pre-refactor
 ```
 
-### 4.4 完成条件
+### 5.4 完成条件
 
 - [ ] 所有更改已提交
 - [ ] 备份标签已创建
@@ -206,13 +334,13 @@ git tag | grep pre-refactor
 
 ---
 
-## 5. 阶段二：创建模块目录
+## 6. 阶段二：创建模块目录
 
-### 5.1 目标
+### 6.1 目标
 
 创建新的模块目录结构 `backend/` 和 `frontend/`。
 
-### 5.2 执行步骤
+### 6.2 执行步骤
 
 ```powershell
 # 进入项目目录
@@ -226,27 +354,27 @@ New-Item -ItemType Directory -Path "frontend" -Force
 Get-ChildItem -Directory | Where-Object { $_.Name -in @('backend', 'frontend') }
 ```
 
-### 5.3 验证方式
+### 7.3 验证方式
 
 ```powershell
 Test-Path backend
 Test-Path frontend
 ```
 
-### 5.4 完成条件
+### 7.4 完成条件
 
 - [ ] `backend/` 目录存在
 - [ ] `frontend/` 目录存在
 
 ---
 
-## 6. 阶段三：移动文件
+## 7. 阶段三：移动文件
 
-### 6.1 目标
+### 7.1 目标
 
 将现有文件移动到新的模块目录中。
 
-### 6.2 执行步骤
+### 7.2 执行步骤
 
 #### 步骤 3.1：移动 FastAPI 服务
 
@@ -319,13 +447,13 @@ Get-ChildItem -Path "frontend" -Recurse -Directory | Select-Object FullName
 
 ---
 
-## 7. 阶段四：清理遗留文件
+## 8. 阶段四：清理遗留文件
 
-### 7.1 目标
+### 8.1 目标
 
 删除旧的 Flask 相关文件和不再需要的遗留文件。
 
-### 7.2 需要删除的文件/目录
+### 8.2 需要删除的文件/目录
 
 | 类型 | 路径 | 说明 |
 |------|------|------|
@@ -337,7 +465,7 @@ Get-ChildItem -Path "frontend" -Recurse -Directory | Select-Object FullName
 | **文件** | `config_tool.py` | 旧配置工具 |
 | **文件** | `msedgedriver.exe` | 浏览器驱动（可选保留） |
 
-### 7.3 执行步骤
+### 8.3 执行步骤
 
 #### 步骤 4.1：确认需要删除的文件
 
@@ -369,7 +497,7 @@ Remove-Item -Path "__pycache__" -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item -Path "*.pyc" -Force -ErrorAction SilentlyContinue
 ```
 
-### 7.4 验证方式
+### 8.4 验证方式
 
 ```powershell
 # 确认文件已删除
@@ -385,7 +513,7 @@ Test-Path backend\spring-boot-service\pom.xml
 Test-Path frontend\vue-frontend\package.json
 ```
 
-### 7.5 完成条件
+### 8.5 完成条件
 
 - [ ] `api/` 目录已删除
 - [ ] `static/` 目录已删除
@@ -396,13 +524,13 @@ Test-Path frontend\vue-frontend\package.json
 
 ---
 
-## 8. 阶段五：更新配置文件
+## 9. 阶段五：更新配置文件
 
-### 8.1 目标
+### 9.1 目标
 
 更新 `docker-compose.yml`、`.gitignore` 和项目引用路径。
 
-### 8.2 更新 docker-compose.yml
+### 9.2 更新 docker-compose.yml
 
 #### 当前配置（需要修改）
 
@@ -445,7 +573,7 @@ services:
       context: ./frontend/vue-frontend
 ```
 
-### 8.3 更新 .gitignore
+### 9.3 更新 .gitignore
 
 #### 需要添加的内容
 
@@ -465,9 +593,9 @@ logs/
 saved_models/
 ```
 
-### 8.4 执行步骤
+### 9.4 执行步骤
 
-#### 步骤 5.1：备份并更新 docker-compose.yml
+#### 步骤 9.1：备份并更新 docker-compose.yml
 
 ```powershell
 # 备份原文件
@@ -476,14 +604,14 @@ Copy-Item "docker-compose.yml" "docker-compose.yml.bak"
 # 读取并更新内容（使用文本编辑器手动修改或 PowerShell 替换）
 ```
 
-#### 步骤 5.2：更新 .gitignore
+#### 步骤 9.2：更新 .gitignore
 
 ```powershell
 # 追加新的忽略规则到 .gitignore
 Add-Content -Path ".gitignore" -Value "`n# ========== 重构后的目录结构 ==========`nbackend/"
 ```
 
-### 8.5 验证方式
+### 9.5 验证方式
 
 ```powershell
 # 验证 docker-compose.yml 语法
@@ -493,7 +621,7 @@ docker-compose config
 Get-Content ".gitignore" | Select-String "backend"
 ```
 
-### 8.6 完成条件
+### 9.6 完成条件
 
 - [ ] `docker-compose.yml` 已更新为新路径
 - [ ] `.gitignore` 已更新
@@ -501,15 +629,15 @@ Get-Content ".gitignore" | Select-String "backend"
 
 ---
 
-## 9. 阶段六：验证与测试
+## 10. 阶段六：验证与测试
 
-### 9.1 目标
+### 10.1 目标
 
 确保重构后的项目可以正常构建和运行。
 
-### 9.2 验证清单
+### 10.2 验证清单
 
-#### 9.2.1 Git 状态检查
+#### 10.2.1 Git 状态检查
 
 ```powershell
 git status
@@ -520,7 +648,7 @@ git status
 - 删除的旧文件（Flask 相关）
 - 更新的 `docker-compose.yml`、`.gitignore`
 
-#### 9.2.2 目录结构验证
+#### 10.2.2 目录结构验证
 
 ```powershell
 # 验证整体结构
@@ -536,7 +664,7 @@ Get-ChildItem -Path "frontend"
 Get-ChildItem -Path "frontend/vue-frontend"
 ```
 
-#### 9.2.3 Docker 构建测试
+#### 10.2.3 Docker 构建测试
 
 ```powershell
 # 测试 FastAPI 服务构建
@@ -549,7 +677,7 @@ docker-compose build spring-boot
 docker-compose build frontend
 ```
 
-#### 9.2.4 服务启动测试
+#### 10.2.4 服务启动测试
 
 ```powershell
 # 启动所有服务
@@ -562,7 +690,7 @@ docker-compose ps
 docker-compose logs -f
 ```
 
-#### 9.2.5 功能验证
+#### 10.2.5 功能验证
 
 | 服务 | 地址 | 验证命令 |
 |------|------|----------|
@@ -570,7 +698,7 @@ docker-compose logs -f
 | Spring Boot | http://localhost:8080 | `curl http://localhost:8080/actuator/health` |
 | Vue Frontend | http://localhost:3000 | 浏览器访问 |
 
-### 9.3 完成条件
+### 10.3 完成条件
 
 - [ ] Git 状态显示正确的变更
 - [ ] 目录结构符合预期
@@ -580,15 +708,157 @@ docker-compose logs -f
 
 ---
 
-## 10. 回滚方案
+## 11. 一键启动方案
 
-### 10.1 回滚触发条件
+### 11.1 方案概述
+
+重构后的项目实现**零手动启动**，用户只需一条命令即可启动所有服务。
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                           一键启动流程                                       │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  步骤 1: 创建环境变量文件                                                     │
+│  ┌─────────────────────────────────────────────────────────────────────┐     │
+│  │  cp .env.example .env                                                │     │
+│  │  # 编辑 .env 填入必要的环境变量（见 11.2）                            │     │
+│  └─────────────────────────────────────────────────────────────────────┘     │
+│                                    │                                         │
+│                                    ▼                                         │
+│  步骤 2: 一键启动所有服务                                                     │
+│  ┌─────────────────────────────────────────────────────────────────────┐     │
+│  │  docker-compose up -d                                                │     │
+│  └─────────────────────────────────────────────────────────────────────┘     │
+│                                    │                                         │
+│                                    ▼                                         │
+│  步骤 3: 验证服务状态                                                        │
+│  ┌─────────────────────────────────────────────────────────────────────┐     │
+│  │  docker-compose ps                                                   │     │
+│  │  docker-compose logs -f                                              │     │
+│  └─────────────────────────────────────────────────────────────────────┘     │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 11.2 环境变量配置
+
+#### .env.example 文件内容
+
+```bash
+# ==================== 数据库配置 ====================
+MYSQL_ROOT_PASSWORD=your_mysql_root_password_here
+MYSQL_DATABASE=news_scraper
+DB_USERNAME=newsapp
+DB_PASSWORD=your_db_password_here
+
+# ==================== 服务配置 ====================
+DB_HOST=mysql
+DB_PORT=3306
+
+# ==================== FastAPI 配置 ====================
+FASTAPI_API_KEY=your_fastapi_api_key_here
+HF_ENDPOINT=https://hf-mirror.com
+HF_MODEL_ID=bert-base-chinese
+HF_TIMEOUT=120
+
+# ==================== Spring Boot 配置 ====================
+JWT_SECRET=your_jwt_secret_here_at_least_32_characters
+```
+
+### 11.3 服务启动顺序
+
+Docker Compose 会自动处理服务依赖：
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                           服务启动顺序                                        │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  启动顺序由 depends_on 和 healthcheck 控制:                                  │
+│                                                                              │
+│  1. MySQL (3307)          ← 基础依赖，无依赖                                │
+│       ↓ 健康检查通过                                                         │
+│  2. FastAPI (8000)        ← 依赖 MySQL                                     │
+│       ↓ 健康检查通过                                                         │
+│  3. Spring Boot (8080)    ← 依赖 MySQL + FastAPI                           │
+│  4. Frontend (3000)       ← 依赖 Spring Boot                                │
+│                                                                              │
+│  用户只需: docker-compose up -d                                              │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 11.4 启动验证清单
+
+```powershell
+# 1. 检查所有容器状态
+docker-compose ps
+
+# 预期输出:
+# NAME                IMAGE                    COMMAND                  SERVICE
+# news-mysql          mysql:8.0                "docker-entrypoint.s…"   mysql
+# news-fastapi        news_scraper-fastapi     "uvicorn main:app -…"   fastapi
+# news-springboot     news_scraper-springboot  "java -jar app.jar"      spring-boot
+# news-frontend       news_scraper-frontend    "/docker-entrypoint.…"   frontend
+
+# 2. 检查服务健康状态
+curl http://localhost:8000/api/health      # FastAPI
+curl http://localhost:8080/actuator/health # Spring Boot
+
+# 3. 访问前端
+# 浏览器打开: http://localhost:3000
+```
+
+### 11.5 停止服务
+
+```powershell
+# 停止所有服务（保留数据卷）
+docker-compose down
+
+# 停止所有服务并删除数据卷（谨慎操作，会删除数据库数据）
+docker-compose down -v
+```
+
+### 11.6 常用运维命令
+
+```powershell
+# 查看日志
+docker-compose logs -f              # 查看所有服务日志
+docker-compose logs -f fastapi     # 查看 FastAPI 日志
+docker-compose logs --tail=100 mysql  # 查看 MySQL 最近 100 行日志
+
+# 重启单个服务
+docker-compose restart fastapi
+
+# 重建单个服务
+docker-compose up -d --build fastapi
+
+# 进入容器调试
+docker exec -it news-fastapi bash
+docker exec -it news-mysql mysql -uroot -p
+```
+
+### 11.7 服务端口汇总
+
+| 服务 | 容器端口 | 主机端口 | 说明 |
+|------|----------|----------|------|
+| MySQL | 3306 | 3307 | 数据库（外部访问） |
+| FastAPI | 8000 | 8000 | AI/爬虫服务 API |
+| Spring Boot | 8080 | 8080 | 业务中台 API |
+| Frontend | 80 | 3000 | Vue + Nginx 前端 |
+
+---
+
+## 12. 回滚方案
+
+### 12.1 回滚触发条件
 
 - Docker 构建失败且无法在 30 分钟内解决
 - 服务无法正常启动
 - 关键文件丢失
 
-### 10.2 回滚步骤
+### 12.2 回滚步骤
 
 ```powershell
 # 1. 停止所有服务
@@ -605,7 +875,7 @@ Remove-Item -Path "frontend" -Recurse -Force -ErrorAction SilentlyContinue
 git log --oneline -1
 ```
 
-### 10.3 回滚后操作
+### 12.3 回滚后操作
 
 1. 分析失败原因
 2. 修复问题后重新执行迁移
@@ -613,12 +883,21 @@ git log --oneline -1
 
 ---
 
-## 附录
+## 13. 附录
 
 ### A. 快速执行脚本
 
 ```powershell
 # 迁移执行脚本 - 请在确认理解每一步后再执行
+
+# ========== Phase 0: 移除遗留启动程序 ==========
+Remove-Item -Path "app.py" -Force -ErrorAction SilentlyContinue
+Remove-Item -Path "config_tool.py" -Force -ErrorAction SilentlyContinue
+Remove-Item -Path "api" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item -Path "static" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item -Path "templates" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item -Path "config.json" -Force -ErrorAction SilentlyContinue
+Remove-Item -Path "__pycache__" -Recurse -Force -ErrorAction SilentlyContinue
 
 # ========== Phase 1: 备份 ==========
 git add .
@@ -644,17 +923,37 @@ Remove-Item -Path "config.json" -Force -ErrorAction SilentlyContinue
 Remove-Item -Path "config_tool.py" -Force -ErrorAction SilentlyContinue
 Remove-Item -Path "__pycache__" -Recurse -Force -ErrorAction SilentlyContinue
 
-# ========== Phase 5: 提交更改 ==========
+# ========== Phase 5: 更新配置文件（手动执行）==========
+# 编辑 docker-compose.yml 更新路径
+# 编辑 .gitignore 添加新规则
+
+# ========== Phase 6: 提交更改 ==========
 git add .
 git commit -m "refactor: 重组项目目录结构
 
 - 创建 backend/ 和 frontend/ 顶级模块
 - 移动后端服务到 backend/
 - 移动前端到 frontend/
-- 清理遗留的 Flask 文件"
+- 清理遗留的 Flask 文件
+- 实现 Docker 一键启动架构"
 ```
 
-### B. 术语表
+### B. 一键启动快速参考
+
+```powershell
+# 首次使用
+cp .env.example .env
+# 编辑 .env 填入必要配置
+docker-compose up -d
+
+# 日常使用
+docker-compose up -d          # 启动
+docker-compose ps             # 查看状态
+docker-compose logs -f        # 查看日志
+docker-compose down            # 停止
+```
+
+### C. 术语表
 
 | 术语 | 说明 |
 |------|------|
@@ -663,6 +962,7 @@ git commit -m "refactor: 重组项目目录结构
 | Vue 3 | 前端 JavaScript 框架 |
 | docker-compose | Docker 容器编排工具 |
 | Trust Boundary | 信任边界，系统内外分界线 |
+| 零手动启动 | 通过 Docker 封装实现无需手动运行 Python 脚本的启动方式 |
 
 ---
 
@@ -671,3 +971,4 @@ git commit -m "refactor: 重组项目目录结构
 | 变更日期 | 变更内容 | 变更人 |
 |----------|----------|--------|
 | 2026-09-13 | 创建迁移计划文档 | AI |
+| 2026-09-13 | 新增 Docker 一键启动工程化方案，新增 Phase 0 移除遗留启动程序 | AI |

@@ -8,7 +8,7 @@
 
 | 文档 | 说明 |
 |------|------|
-| [MIGRATION.md](./MIGRATION.md) | 项目重构迁移指南，指导目录重组和服务迁移步骤 |
+| [MIGRATION.md](./MIGRATION.md) | 项目重构迁移指南，指导目录重组和服务迁移步骤（含 Docker 一键启动方案） |
 
 ---
 
@@ -16,18 +16,49 @@
 
 **项目重构迁移指南**提供了从当前架构迁移到新架构的详细步骤：
 
+- Phase 0：移除遗留启动程序（`app.py`、`config_tool.py` 等）
 - Phase 1：准备与备份
 - Phase 2：创建模块目录
 - Phase 3：移动文件
 - Phase 4：清理遗留文件
 - Phase 5：更新配置文件
 - Phase 6：验证与测试
+- **一键启动方案**：Docker Compose 零手动启动架构
 
 每个阶段包含：
 - 具体执行步骤
 - 验证方式
 - 完成条件
 - 回滚方案
+
+---
+
+## 一键启动（推荐）
+
+重构后支持 Docker 一键启动，无需手动运行 Python 脚本：
+
+```bash
+# 1. 复制环境变量文件
+cp .env.example .env
+# 编辑 .env 填入必要配置
+
+# 2. 一键启动所有服务
+docker-compose up -d
+
+# 3. 访问前端
+open http://localhost:3000
+```
+
+**启动的服务**：
+- MySQL (:3307)
+- FastAPI (:8000)
+- Spring Boot (:8080)
+- Vue/Nginx (:3000)
+
+**无需手动执行**：
+- ✗ `python app.py`
+- ✗ `python config_tool.py`
+- ✗ 手动安装 Python 依赖
 
 ---
 
