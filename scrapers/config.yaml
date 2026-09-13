@@ -1,0 +1,193 @@
+database:
+  host: localhost
+  port: 3306
+  username: root
+  password: '123580'
+  name: news_scraper
+  charset: utf8mb4
+  table_prefix: scraper_
+scraper:
+  request_delay: 2
+  timeout: 10
+  max_items: 1000
+  retry_times: 3
+  user_agents:
+  - Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)
+    Chrome/120.0.0.0 Safari/537.36
+  - Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like
+    Gecko) Chrome/120.0.0.0 Safari/537.36
+  - Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0
+hotsearch:
+  enabled: true
+  use_scrapy: true
+  spiders:
+  - name: weibo
+    platform_id: 3
+    enabled: true
+  - name: baidu_hot
+    platform_id: 12
+    enabled: true
+  - name: douyin_hot_hot
+    platform_id: 16
+    enabled: true
+  - name: bilibili
+    platform_id: 15
+    enabled: true
+  - name: kuaishou_hot
+    platform_id: 24
+    enabled: true
+domestic_news:
+  enabled: true
+  sources:
+  - name: sina
+    enabled: true
+    seed_url: https://news.sina.com.cn/
+    source_name: 新浪新闻
+    max_items: 3000
+    concurrency: 20
+  - name: netease
+    enabled: true
+    seed_url: https://www.163.com/news/
+    source_name: 网易新闻
+  - name: ifeng
+    enabled: true
+    seed_url: https://news.ifeng.com/
+    source_name: 凤凰新闻
+    max_items: 3000
+    concurrency: 2
+    min_request_interval: 1.0
+    max_failures_per_domain: 10
+    listpage_enabled: true
+    listpage_max_pages: 200
+    listpage_seed_limit: 50
+    shanklist_enabled: true
+    shanklist_seed_limit: 300
+    discovery_enabled: true
+    discovery_max_pages: 400
+    discovery_queue_limit: 1500
+    exclude_domains:
+    - ulive.house.ifeng.com
+    - zhuanti.house.ifeng.com
+    - food.ifeng.com
+    - help.ifeng.com
+    - s.world.house.ifeng.com
+    deny_url_keywords:
+    - listpage
+    - /search/
+    - /special/
+    - /c/special/
+    - /homedetail/
+    - /daogou/
+    - /video/
+    - /live/
+    - ulive.
+    - zhibo.
+    - v.ifeng.com
+    - view.html
+  - name: chinanews
+    enabled: true
+    seed_url: https://www.chinanews.com.cn/
+    source_name: 中新网
+    use_selenium: false
+    enable_proxy_rotation: true
+    proxy_apis:
+    - https://api.proxyscrape.com/v2/?request=getproxies&protocol=http&timeout=5000&country=CN
+    - https://www.proxy-list.download/api/v1/get?type=http&country=cn
+    proxies:
+    - http://183.247.199.120:30001
+    - http://120.79.216.58:3128
+    - http://112.74.87.178:3128
+    - http://123.56.28.24:3128
+    - http://47.98.139.84:3128
+    - http://39.108.52.76:3128
+    - http://47.107.166.54:3128
+    - http://120.26.168.234:3128
+    proxy_refresh_interval: 300
+  - name: cankaoxiaoxi
+    enabled: true
+    seed_url: https://www.cankaoxiaoxi.com/
+    source_name: 参考消息
+    max_items: 3000
+    concurrency: 50
+    min_request_interval: 0.5
+    use_selenium: true
+    headless_mode: true
+    selenium_proxy: null
+    enable_proxy_rotation: true
+    proxy_apis:
+    - https://api.proxyscrape.com/v2/?request=getproxies&protocol=http&timeout=5000&country=CN
+    - https://www.proxy-list.download/api/v1/get?type=http&country=cn
+    proxies:
+    - http://183.247.199.120:30001
+    - http://120.79.216.58:3128
+    - http://112.74.87.178:3128
+    - http://123.56.28.24:3128
+    - http://47.98.139.84:3128
+    - http://39.108.52.76:3128
+    - http://47.107.166.54:3128
+    - http://120.26.168.234:3128
+    proxy_refresh_interval: 300
+logging:
+  level: INFO
+  format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+  file:
+    enabled: true
+    path: logs/scraper.log
+    max_size: 10485760
+    backup_count: 5
+run_mode:
+  mode: single
+  cycle_interval: 180
+  timeout: 300
+llm:
+  enabled: true
+  api_base: https://api.openai.com/v1
+  api_key: sk-...
+  model: gpt-3.5-turbo
+  temperature: 0.1
+  max_tokens: 100
+nlp:
+  enabled: true
+  prefer_local: true
+  embedding_model: saved_models\pretrained\bert-base-chinese
+  embedding_max_length: 256
+  embedding_batch_size: 16
+  event_window_days: 3
+  limit: 500
+  min_cluster_size: 3
+  similarity_threshold: 0.72
+  llm_use_for_sentiment: true
+  llm_use_for_event_framing: false
+  model_selection:
+    sentiment_entity_model: null
+    sentiment_stance_model: null
+    sentiment_sentiment_model: null
+    events_vector_model: saved_models/latest_bert
+xinhua:
+  crawl:
+    target_count: 3000
+    max_pages: 200
+    concurrency: 500
+    limit_rate: 80
+    detail_task_buffer: 50
+    metrics_port: 8001
+    exists_cache_size: 50000
+    driver_path: msedgedriver.exe
+  discover:
+    output_dir: logs
+    max_candidates: 200
+    pages_per_channel: 2
+    sample_articles: 10
+training_enhancement:
+  data_augmentation:
+    enabled: true
+    alpha_synonym: 0.15
+    alpha_delete: 0.1
+    alpha_swap: 0.1
+    target_ratio: 0.75
+    max_aug_factor: 4
+  fgm:
+    enabled: true
+    epsilon: 1.0
+    concurrency: 50
+    limit_rate: 20

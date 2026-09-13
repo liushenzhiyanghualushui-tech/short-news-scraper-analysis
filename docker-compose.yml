@@ -1,0 +1,130 @@
+version: "3.9"
+
+# ============================================
+# 短新闻爬取与分析系统 - Docker Compose 编排
+# 服务: MySQL + FastAPI + Spring Boot + Vue/Nginx
+# ============================================
+
+services:
+  # ==================== MySQL 数据库 ====================
+  mysql:
+    image: mysql:8.0
+    container_name: news-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?请设置 MYSQL_ROOT_PASSWORD 环境变量}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-news_scraper}
+      MYSQL_USER: ${DB_USERNAME:-newsapp}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?请设置 DB_PASSWORD 环境变量}
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-authentication-plugin=mysql_native_password
+      - --max_connections=500
+      - --wait_timeout=28800
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - news-network
+
+  # ==================== FastAPI AI/爬虫服务 ====================
+  fastapi:
+    build:
+      context: ./fastapi-service
+      dockerfile: Dockerfile
+    container_name: news-fastapi
+    restart: unless-stopped
+    environment:
+      - DB_HOST=${DB_HOST:-mysql}
+      - DB_PORT=${DB_PORT:-3306}
+      - DB_USER=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${MYSQL_DATABASE}
+      - API_KEY=${FASTAPI_API_KEY:?请设置 FASTAPI_API_KEY 环境变量}
+      - HF_ENDPOINT=${HF_ENDPOINT:-https://hf-mirror.com}
+      - HF_MODEL_ID=${HF_MODEL_ID:-bert-base-chinese}
+      - HF_TIMEOUT=${HF_TIMEOUT:-120}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./fastapi-service:/app
+      - saved_models:/app/saved_models
+      - ./scrapers:/app/scrapers:ro
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    networks:
+      - news-network
+
+  # ==================== Spring Boot 业务中台 ====================
+  spring-boot:
+    build:
+      context: ./spring-boot-service
+      dockerfile: Dockerfile
+    container_name: news-springboot
+    restart: unless-stopped
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://${DB_HOST:-mysql}:${DB_PORT:-3306}/${MYSQL_DATABASE:-news_scraper}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8mb4&connectionAttributes=none
+      - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      - SPRING_DATASOURCE_DRIVER_CLASS_NAME=com.mysql.cj.jdbc.Driver
+      - FASTAPI_BASE_URL=http://fastapi:8000
+      - FASTAPI_API_KEY=${FASTAPI_API_KEY}
+      - JWT_SECRET=${JWT_SECRET:?请设置 JWT_SECRET 环境变量}
+      - JWT_EXPIRATION=3600
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      fastapi:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 90s
+    networks:
+      - news-network
+
+  # ==================== Vue + Nginx 前端 ====================
+  frontend:
+    build:
+      context: ./vue-frontend
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_BASE_URL=/api
+    container_name: news-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - spring-boot
+    networks:
+      - news-network
+
+volumes:
+  mysql_data:
+    driver: local
+  saved_models:
+    driver: local
+
+networks:
+  news-network:
+    driver: bridge

@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新闻数据采集系统 | News Scraper Platform</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+</head>
+<body>
+    <!-- 侧边导航 -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <i class="fas fa-spider"></i>
+                <span>News Scraper</span>
+            </div>
+        </div>
+        <nav class="sidebar-nav">
+            <ul>
+                <li class="nav-item active" data-page="dashboard">
+                    <a href="#dashboard">
+                        <i class="fas fa-th-large"></i>
+                        <span>仪表盘</span>
+                    </a>
+                </li>
+                <li class="nav-item" data-page="analysis">
+                    <a href="#analysis">
+                        <i class="fas fa-chart-area"></i>
+                        <span>新闻分析</span>
+                    </a>
+                </li>
+                <li class="nav-item" data-page="news">
+                    <a href="#news">
+                        <i class="fas fa-newspaper"></i>
+                        <span>新闻采集</span>
+                    </a>
+                </li>
+                <li class="nav-item" data-page="logs">
+                    <a href="#logs">
+                        <i class="fas fa-th-list"></i>
+                        <span>新闻分类</span>
+                    </a>
+                </li>
+                <li class="nav-item" data-page="word-cloud">
+                    <a href="#word-cloud">
+                        <i class="fas fa-cloud"></i>
+                        <span>词云分析</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="system-status">
+                <span class="status-dot online"></span>
+                <span>系统在线</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- 主内容区 -->
+    <main class="main-content">
+        <!-- 顶部导航 -->
+        <header class="main-header">
+            <div class="header-left">
+                <button class="sidebar-toggle" id="sidebarToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="breadcrumb">
+                    <span class="current-page">仪表盘</span>
+                </div>
+            </div>
+            <div class="header-right">
+
+                <div class="header-actions">
+                    <div class="user-menu" onclick="navigateTo('admin')" style="cursor: pointer;" title="进入系统管理">
+                        <div class="user-avatar">
+                            <i class="fas fa-user-cog"></i>
+                        </div>
+                        <span class="user-name">管理员</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- 页面内容 -->
+        <div class="page-content">
+            <!-- 仪表盘页面 -->
+            <section class="page active" id="page-dashboard">
+                <div class="page-header">
+                    <h1>数据概览</h1>
+                    <p>实时监控新闻数据采集状态</p>
+                </div>
+
+                <!-- 统计卡片 -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon blue">
+                            <i class="fas fa-database"></i>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="total-articles">0</span>
+                            <span class="stat-label">数据总量</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon purple">
+                            <i class="fas fa-home"></i>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="domestic-sources">0</span>
+                            <span class="stat-label">国内新闻</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 今日统计 -->
+                <div class="dashboard-row">
+                    <div class="card today-stats">
+                        <div class="card-header">
+                            <h3><i class="fas fa-chart-line"></i> 今日执行概况</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="today-stats-grid">
+                                <div class="today-stat">
+                                    <span class="today-stat-value" id="today-runs">0</span>
+                                    <span class="today-stat-label">执行次数</span>
+                                </div>
+                                <div class="today-stat success">
+                                    <span class="today-stat-value" id="today-success">0</span>
+                                    <span class="today-stat-label">成功</span>
+                                </div>
+                                <div class="today-stat failed">
+                                    <span class="today-stat-value" id="today-failed">0</span>
+                                    <span class="today-stat-label">失败</span>
+                                </div>
+                                <div class="today-stat">
+                                    <span class="today-stat-value" id="today-items">0</span>
+                                    <span class="today-stat-label">采集条数</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 最近活动 -->
+                    <div class="card recent-activity">
+                        <div class="card-header">
+                            <h3><i class="fas fa-clock"></i> 最近采集</h3>
+                            <a href="#logs" class="view-all" onclick="navigateTo('logs')">查看全部 <i class="fas fa-arrow-right"></i></a>
+                        </div>
+                        <div class="card-body">
+                            <div class="activity-list" id="recent-activity-list">
+                                <div class="loading-item">
+                                    <i class="fas fa-spinner fa-spin"></i>
+                                    加载数据中...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 爬虫控制面板 -->
+                <div class="card spider-control">
+                    <div class="card-header">
+                        <h3><i class="fas fa-spider"></i> 爬虫控制</h3>
+                        <div class="card-header-actions">
+                            <button class="btn btn-primary btn-sm" onclick="loadSpiderList()">
+                                <i class="fas fa-sync-alt"></i> 刷新
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="spider-grid" id="spider-list">
+                            <div class="loading-item">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                加载爬虫列表中...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 新闻分析页面 -->
+            <section class="page" id="page-analysis">
+                <div class="page-header">
+                    <h1>新闻分析</h1>
+                    <p>对分类后的新闻进行趋势与质量洞察</p>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-chart-area"></i> 分析面板</h3>
+                        <div class="header-actions" style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                            <select class="select-control" id="analysis-days" style="min-width: 120px;">
+                                <option value="7">近7天</option>
+                                <option value="30" selected>近30天</option>
+                            </select>
+                            <select class="select-control" id="analysis-topn" style="min-width: 120px;">
+                                <option value="5">Top5</option>
+                                <option value="8" selected>Top8</option>
+                                <option value="12">Top12</option>
+                            </select>
+                            <button class="btn btn-secondary btn-sm" id="btn-refresh-analysis">
+                                <i class="fas fa-sync-alt"></i> 刷新
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="analytics-grid">
+                            <div class="analytics-panel">
+                                <div class="analytics-title">来源占比</div>
+                                <div id="analysis-chart-source-share" class="chart-box chart-h320"></div>
+                            </div>
+                            <div class="analytics-panel">
+                                <div class="analytics-title">信息密度</div>
+                                <div id="analysis-chart-info-density" class="chart-box chart-h320"></div>
+                            </div>
+                        </div>
+                        <div class="analytics-panel" style="margin-top: 16px;">
+                            <div class="analytics-title">分类趋势</div>
+                            <div id="analysis-chart-category-trends" class="chart-box chart-h420"></div>
+                        </div>
+                        <div class="analytics-panel" style="margin-top: 16px;">
+                            <div class="analytics-title" style="justify-content: space-between;">
+                                <span>分类下钻</span>
+                                <div id="analysis-drill-badge" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;"></div>
+                            </div>
+                            <div style="padding: 16px;">
+                                <div class="analytics-stack">
+                                    <div class="analytics-panel">
+                                        <div class="analytics-title">来源占比（下钻）</div>
+                                        <div id="analysis-drill-source-share" class="chart-box chart-h320"></div>
+                                    </div>
+                                    <div class="analytics-panel">
+                                        <div class="analytics-title">关键词趋势（下钻）</div>
+                                        <div id="analysis-drill-keyword-trends" class="chart-box chart-h320"></div>
+                                    </div>
+                                    <div class="analytics-panel">
+                                        <div class="analytics-title">代表新闻（最新）</div>
+                                        <div id="analysis-drill-news-list" style="padding: 12px 16px;"></div>
+                                    </div>
+                                </div>
+                                <div style="color: var(--text-secondary); font-size: 13px; margin-top: 10px;">
+                                    点击上方“分类趋势”中的某一天数据点触发下钻
+                                </div>
+                            </div>
+                        </div>
+                        <div class="analytics-panel" style="margin-top: 16px;">
+                            <div class="analytics-title">分类相似度矩阵</div>
+                            <div id="analysis-chart-category-similarity" class="chart-box chart-h420"></div>
+                        </div>
+                        <div class="analytics-panel" style="margin-top: 16px;">
+                            <div class="analytics-title">分类 × 小时 矩阵</div>
+                            <div id="analysis-chart-category-hour-matrix" class="chart-box chart-h420"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 新闻采集页面 -->
+            <section class="page" id="page-news">
+                <div class="page-header">
+                    <h1>新闻采集</h1>
+                    <p>国内新闻媒体数据采集管理</p>
+                </div>
+
+                <div class="toolbar">
+                    <div class="toolbar-left">
+                        <div class="tab-buttons">
+                            <button class="tab-btn active" data-source="" onclick="filterBySource(this, '')">全部</button>
+                            <button class="tab-btn" data-source="sina" onclick="filterBySource(this, 'sina')">新浪</button>
+                            <button class="tab-btn" data-source="netease" onclick="filterBySource(this, 'netease')">网易</button>
+                            <button class="tab-btn" data-source="tencent" onclick="filterBySource(this, 'tencent')">腾讯</button>
+                            <button class="tab-btn" data-source="ifeng" onclick="filterBySource(this, 'ifeng')">凤凰</button>
+                            <button class="tab-btn" data-source="pengpai" onclick="filterBySource(this, 'pengpai')">澎湃</button>
+                            <button class="tab-btn" data-source="cankaoxiaoxi" onclick="filterBySource(this, 'cankaoxiaoxi')">参考消息</button>
+                            <button class="tab-btn" data-source="chinanews" onclick="filterBySource(this, 'chinanews')">中新网</button>
+                            <button class="tab-btn" data-source="xinhua" onclick="filterBySource(this, 'xinhua')">新华网</button>
+                        </div>
+                    </div>
+                    <div class="toolbar-right">
+                        <button class="btn btn-primary" onclick="loadNews()">
+                            <i class="fas fa-sync-alt"></i> 刷新
+                        </button>
+                    </div>
+                </div>
+
+                <div class="news-grid" id="news-grid">
+                    <div class="loading-card">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        加载数据中...
+                    </div>
+                </div>
+
+                <div class="card" id="news-table-card" style="display: none;">
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>来源</th>
+                                        <th>类型</th>
+                                        <th>标题</th>
+                                        <th>作者</th>
+                                        <th>发布时间</th>
+                                        <th>采集时间</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="news-table-body">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 新闻分类页面 (原运行日志) -->
+            <section class="page" id="page-logs">
+                <div class="page-header">
+                    <h1>新闻内容分类</h1>
+                    <p>按议题属性自动归类展示新闻数据</p>
+                </div>
+
+                <div class="toolbar">
+                    <div class="toolbar-left">
+                        <select class="select-control" id="category-filter" onchange="loadClassifiedNews()">
+                            <option value="">全部分类</option>
+                            <option value="政策与法规">政策与法规</option>
+                            <option value="突发事件">突发事件</option>
+                            <option value="企业舆情">企业舆情</option>
+                            <option value="社会民生">社会民生</option>
+                            <option value="国际与外交">国际与外交</option>
+                            <option value="科技与创新">科技与创新</option>
+                            <option value="文体娱乐">文体娱乐</option>
+                        </select>
+                    </div>
+                    <div class="toolbar-right">
+                        <button class="btn btn-primary" onclick="loadClassifiedNews()">
+                            <i class="fas fa-sync-alt"></i> 刷新
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>分类</th>
+                                        <th>标题</th>
+                                        <th>来源媒体</th>
+                                        <th>发布时间</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="logs-table-body">
+                                    <tr class="loading-row">
+                                        <td colspan="5">
+                                            <i class="fas fa-spinner fa-spin"></i>
+                                            加载数据中...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 词云分析页面 -->
+            <section class="page" id="page-word-cloud">
+                <div class="page-header">
+                    <h1>分类词云分析</h1>
+                    <p>按分类查看新闻高频词汇分布</p>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-chart-line"></i> 关键词趋势与词云</h3>
+                        <div class="header-actions">
+                            <select class="select-control" id="cloud-category-select" onchange="loadWordCloudInsights()">
+                                <option value="all">全部分类</option>
+                            </select>
+                            <select class="select-control" id="trend-days-select" onchange="loadWordCloudInsights()">
+                                <option value="7">近7天</option>
+                                <option value="14" selected>近14天</option>
+                                <option value="30">近30天</option>
+                            </select>
+                            <select class="select-control" id="trend-topk-select" onchange="loadWordCloudInsights()">
+                                <option value="3">Top3</option>
+                                <option value="5" selected>Top5</option>
+                                <option value="8">Top8</option>
+                            </select>
+                            <button class="btn btn-secondary btn-sm" onclick="loadWordCloudInsights()">
+                                <i class="fas fa-sync-alt"></i> 刷新
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="analytics-stack">
+                            <div class="analytics-panel">
+                                <div class="analytics-title">关键词趋势</div>
+                                <div id="chart-keyword-trends" class="chart-box chart-h320"></div>
+                            </div>
+                            <div class="analytics-panel">
+                                <div class="analytics-title">分类词云</div>
+                                <div class="word-cloud-container" id="category-word-cloud-container">
+                                    <div class="loading-item">
+                                        <i class="fas fa-spinner fa-spin"></i>
+                                        请选择分类加载词云...
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 新闻详情页面 -->
+            <section class="page" id="page-news-detail">
+                <div class="page-header">
+                    <div class="breadcrumb">
+                        <a href="#news" onclick="navigateTo('news')">新闻采集</a>
+                        <span class="separator">/</span>
+                        <span class="current-page" id="detail-breadcrumb">文章详情</span>
+                    </div>
+                    <h1 id="detail-page-title">文章详情</h1>
+                    <p id="detail-page-desc">查看新闻详细内容</p>
+                </div>
+
+                <div class="news-detail-container" id="news-detail-container">
+                    <div class="loading-card">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>正在加载文章内容...</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 管理员页面 -->
+            <section class="page" id="page-admin">
+                <div class="page-header">
+                    <div class="header-content">
+                        <h1>系统管理</h1>
+                        <p>数据清洗与分类配置</p>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn btn-secondary" onclick="exitAdminPage()">
+                            <i class="fas fa-home"></i> 返回主页
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 管理员功能标签页 -->
+                <div class="toolbar">
+                    <div class="toolbar-left">
+                        <div class="tab-buttons">
+                            <button class="tab-btn active" data-admin-tab="data-clean" onclick="switchAdminTab(this, 'data-clean')">
+                                <i class="fas fa-broom"></i> 数据清洗
+                            </button>
+                            <button class="tab-btn" data-admin-tab="content-class" onclick="switchAdminTab(this, 'content-class')">
+                                <i class="fas fa-tags"></i> 新闻内容分类
+                            </button>
+                        </div>
+                    </div>
+                    <div class="toolbar-right">
+                        <button class="btn btn-primary" onclick="refreshAdminPage()">
+                            <i class="fas fa-sync-alt"></i> 刷新
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 数据清洗面板 -->
+                <div class="admin-tab active" id="admin-tab-data-clean">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-broom"></i> 数据清洗配置</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="clean-config-grid">
+                                <div class="clean-config-item">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="clean-format" checked>
+                                        <span>格式统一 (时间/媒体/去除HTML)</span>
+                                    </label>
+                                </div>
+                                <div class="clean-config-item">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="clean-deduplicate" checked>
+                                        <span>去重处理 (精确/模糊去重)</span>
+                                    </label>
+                                </div>
+                                <div class="clean-config-item">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="clean-filter-invalid" checked>
+                                        <span>无效内容过滤 (非新闻/敏感内容)</span>
+                                    </label>
+                                </div>
+                                <div class="clean-config-item">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="clean-missing" checked>
+                                        <span>缺失值处理 (补全/标记)</span>
+                                    </label>
+                                </div>
+                                <div class="clean-config-item">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="clean-llm-filter">
+                                        <span>大模型筛选 (独有模型/新闻格式校验)</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="clean-actions">
+                                <button class="btn btn-primary" onclick="runDataClean()">
+                                    <i class="fas fa-play"></i> 开始清洗
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 清洗结果 -->
+                    <div class="card" id="clean-result-card" style="display: none; margin-top: 20px;">
+                        <div class="card-header">
+                            <h3><i class="fas fa-check-circle"></i> 清洗结果</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="stats-grid" id="clean-result-stats">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 新闻内容分类面板 -->
+                <div class="admin-tab" id="admin-tab-content-class">
+                    <div class="card" style="width: 100%;">
+                        <div class="card-header">
+                            <h3><i class="fas fa-brain"></i> 智能新闻分类模型</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="model-config-section" style="margin-bottom: 20px;">
+                                <h4>1. 模型配置</h4>
+                                <div class="row" style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 15px;">
+                                    <div class="form-group" style="flex: 1; min-width: 200px;">
+                                        <label>模型类型</label>
+                                        <select class="select-control" id="model-type-select" onchange="updateModelParams()">
+                                            <option value="bert">BERT 预训练模型 (推荐)</option>
+                                            <option value="bert_textcnn">BERT+TextCNN 混合模型 (New)</option>
+                                            <option value="lstm">LSTM 深度学习模型</option>
+                                            <option value="cnn">CNN 卷积神经网络</option>
+                                            <option value="svm">SVM 支持向量机</option>
+                                            <option value="nb">朴素贝叶斯</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group" style="flex: 1; min-width: 220px;">
+                                        <label>训练任务</label>
+                                        <select class="select-control" id="nlp-task-select" onchange="updateNlpTaskParams()">
+                                            <option value="content_classification">新闻分类</option>
+                                            <option value="sentiment_entity_ranker">情感实体（ranker）</option>
+                                            <option value="sentiment_stance">情感立场</option>
+                                            <option value="sentiment_sentiment">情感情绪</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group" style="flex: 1; min-width: 150px;" id="param-epochs">
+                                        <label>训练轮次 (Epochs)</label>
+                                        <input type="number" class="input-control" id="train-epochs" value="3" min="1" max="50">
+                                    </div>
+                                    <div class="form-group" style="flex: 1; min-width: 150px;" id="param-batch">
+                                        <label>批次大小 (Batch Size)</label>
+                                        <input type="number" class="input-control" id="train-batch-size" value="16" min="1" max="128">
+                                    </div>
+                                    <div class="form-group" style="flex: 1; min-width: 150px;" id="param-lr">
+                                        <label>学习率 (Learning Rate)</label>
+                                        <input type="number" class="input-control" id="train-learning-rate" value="0.00002" step="0.00001">
+                                    </div>
+                                    <div class="form-group" style="flex: 1; min-width: 150px; display: none;" id="param-sentiment-days">
+                                        <label>弱标注天数</label>
+                                        <input type="number" class="input-control" id="train-sentiment-days" value="3" min="1" max="30">
+                                    </div>
+                                    <div class="form-group" style="flex: 1; min-width: 160px; display: none;" id="param-sentiment-limit">
+                                        <label>弱标注条数</label>
+                                        <input type="number" class="input-control" id="train-sentiment-limit" value="300" min="50" max="5000">
+                                    </div>
+                                    <div class="form-group" style="flex: 1; min-width: 150px; display: none;" id="param-sentiment-entities">
+                                        <label>主体数</label>
+                                        <input type="number" class="input-control" id="train-sentiment-max-entities" value="3" min="1" max="10">
+                                    </div>
+                                </div>
+                                
+                                <!-- 新模型介绍卡片 (默认隐藏) -->
+                                <div id="model-intro-cards" class="intro-cards-container" style="display: none;">
+                                    <div class="intro-card">
+                                        <div class="intro-card-icon">1</div>
+                                        <h4 class="intro-card-title">混合架构创新</h4>
+                                        <p class="intro-card-desc">
+                                            提出BERT+TextCNN+规则后处理的混合架构，兼顾分类精度与速度，有效解决短文本新闻分类中的高精度与低延迟矛盾。
+                                        </p>
+                                    </div>
+                                    <div class="intro-card">
+                                        <div class="intro-card-icon">2</div>
+                                        <h4 class="intro-card-title">数据增强策略</h4>
+                                        <p class="intro-card-desc">
+                                            设计领域自适应数据增强策略，利用同义词替换与EDA随机操作在小样本场景下平衡类别分布，提升模型泛化能力。
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <!-- 训练增强选项 (仅 BERT/BERT+TextCNN 显示) -->
+                                <div id="training-enhancement-options" style="display: none; margin-top: 15px; padding: 12px 16px; background: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef;">
+                                    <h5 style="margin: 0 0 10px 0; font-size: 13px; color: #495057;"><i class="fas fa-flask" style="margin-right: 6px;"></i>训练增强选项</h5>
+                                    <div style="display: flex; gap: 24px; flex-wrap: wrap;">
+                                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px;">
+                                            <input type="checkbox" id="enable-augmentation" checked style="width: 16px; height: 16px;">
+                                            <span><strong>数据增强</strong>（同义词替换 + EDA，自动补充低频类别样本）</span>
+                                        </label>
+                                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px;">
+                                            <input type="checkbox" id="enable-fgm" checked style="width: 16px; height: 16px;">
+                                            <span><strong>对抗训练 FGM</strong>（Embedding 扰动，增强泛化鲁棒性）</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="model-action-section" style="margin-bottom: 20px; border-top: 1px solid #eee; padding-top: 20px;">
+                                <h4>2. 训练控制</h4>
+                                <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 15px;">
+                                    <div style="display: flex; gap: 10px;">
+                                        <button class="btn btn-primary" id="btn-start-training" onclick="startModelTraining()">
+                                            <i class="fas fa-play"></i> 开始训练
+                                        </button>
+                                        <button class="btn btn-danger" id="btn-stop-training" onclick="stopModelTraining()" disabled>
+                                            <i class="fas fa-stop"></i> 停止训练
+                                        </button>
+                                        <button class="btn btn-secondary" id="btn-apply-model" onclick="applyCurrentModel()" title="使用当前模型重新分类所有数据">
+                                            <i class="fas fa-magic"></i> 应用当前模型
+                                        </button>
+                                        <button class="btn btn-danger" onclick="clearSavedModel()" title="清除内存与已训练模型存档（保留预训练权重缓存）">
+                                            <i class="fas fa-trash"></i> 清除训练模型
+                                        </button>
+                                    </div>
+                                    <div style="flex: 1;">
+                                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                                            <span id="training-status-text">就绪</span>
+                                            <span id="training-progress-text">0%</span>
+                                        </div>
+                                        <div class="progress" style="height: 20px; background-color: #f0f0f0; border-radius: 4px; overflow: hidden;">
+                                            <div id="training-progress-bar" class="progress-bar" style="width: 0%; height: 100%; background-color: #007bff; transition: width 0.3s;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="model-log-section" style="border-top: 1px solid #eee; padding-top: 20px;">
+                                <h4>3. 训练日志</h4>
+                                <div id="training-logs" style="height: 200px; background-color: #1e1e1e; color: #00ff00; padding: 10px; border-radius: 4px; overflow-y: auto; font-family: monospace; font-size: 12px;">
+                                    <div class="log-line">[System] 等待开始训练...</div>
+                                </div>
+                            </div>
+
+                            <!-- 模型性能多维可视化 -->
+                            <div class="model-perf-section" style="margin-top: 24px; border-top: 1px solid #eee; padding-top: 20px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                                    <h4 style="margin-bottom: 0;"><i class="fas fa-chart-area" style="margin-right: 8px; color: var(--primary-color);"></i>4. 模型性能深度分析</h4>
+                                    <div style="display: flex; gap: 10px; align-items: center;">
+                                        <select class="select-control" id="model-analysis-select" onchange="onModelAnalysisSelectionChange()" style="min-width: 260px;">
+                                            <option value="">请选择模型进行分析...</option>
+                                        </select>
+                                        <button class="btn btn-outline btn-sm" onclick="clearModelHistory()">
+                                            <i class="fas fa-trash-alt"></i> 清空记录
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- 第一行: 雷达图 + 趋势图 -->
+                                <div class="model-charts-grid">
+                                    <div class="card model-chart-card">
+                                        <div class="card-header">
+                                            <h3><i class="fas fa-crosshairs"></i> 多维指标雷达图</h3>
+                                        </div>
+                                        <div class="card-body">
+                                            <div id="model-radar-chart" style="width: 100%; height: 380px;"></div>
+                                        </div>
+                                    </div>
+                                    <div class="card model-chart-card">
+                                        <div class="card-header">
+                                            <h3><i class="fas fa-chart-line"></i> 训练趋势折线图</h3>
+                                        </div>
+                                        <div class="card-body">
+                                            <div id="model-trend-chart" style="width: 100%; height: 380px;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 第二行: 混淆矩阵 + 类别指标 -->
+                                <div class="model-charts-grid" style="margin-top: 20px;">
+                                    <div class="card model-chart-card">
+                                        <div class="card-header">
+                                            <h3><i class="fas fa-th"></i> 混淆矩阵热力图</h3>
+                                            <div class="header-actions">
+                                                <button class="btn btn-primary btn-sm" id="btn-evaluate-detail" onclick="evaluateAndRenderDetails()">
+                                                    <i class="fas fa-microscope"></i> 详细评估
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="card-body">
+                                            <div id="model-confusion-matrix" style="width: 100%; height: 420px;">
+                                                <div class="empty-state"><i class="fas fa-th"></i><p>点击"详细评估"按钮生成混淆矩阵</p></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="card model-chart-card">
+                                        <div class="card-header">
+                                            <h3><i class="fas fa-tags"></i> 各类别性能指标</h3>
+                                        </div>
+                                        <div class="card-body">
+                                            <div id="model-class-metrics-chart" style="width: 100%; height: 420px;">
+                                                <div class="empty-state"><i class="fas fa-tags"></i><p>点击"详细评估"按钮生成类别指标</p></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 第三行: 数据集概况 -->
+                                <div class="card model-chart-card" style="margin-top: 20px;">
+                                    <div class="card-header">
+                                        <h3><i class="fas fa-database"></i> 数据集概况</h3>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="dataset-overview-wrapper">
+                                            <div id="model-dataset-ring" style="width: 320px; min-width: 260px; height: 280px;"></div>
+                                            <div class="dataset-stats-grid" id="dataset-stats-cards">
+                                                <div class="dataset-stat-card">
+                                                    <div class="dataset-stat-value" id="ds-total-samples">-</div>
+                                                    <div class="dataset-stat-label">总样本数</div>
+                                                </div>
+                                                <div class="dataset-stat-card">
+                                                    <div class="dataset-stat-value" id="ds-augmented">-</div>
+                                                    <div class="dataset-stat-label">增强样本</div>
+                                                </div>
+                                                <div class="dataset-stat-card">
+                                                    <div class="dataset-stat-value" id="ds-auto-labeled">-</div>
+                                                    <div class="dataset-stat-label">自动标注</div>
+                                                </div>
+                                                <div class="dataset-stat-card">
+                                                    <div class="dataset-stat-value" id="ds-deduplicated">-</div>
+                                                    <div class="dataset-stat-label">去重删除</div>
+                                                </div>
+                                                <div class="dataset-stat-card">
+                                                    <div class="dataset-stat-value" id="ds-class-count">-</div>
+                                                    <div class="dataset-stat-label">分类数量</div>
+                                                </div>
+                                                <div class="dataset-stat-card">
+                                                    <div class="dataset-stat-value" id="ds-model-type">-</div>
+                                                    <div class="dataset-stat-label">最新模型</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+        </div>
+    </main>
+
+    <!-- 模态框 -->
+    <div class="modal" id="detail-modal">
+        <div class="modal-overlay" onclick="closeModal()"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">详情</h3>
+                <button class="modal-close" onclick="closeModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="modal-body">
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast 通知 -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,31 @@
+[
+    {
+        "domain": ".baidu.com",
+        "name": "BAIDUID",
+        "value": "B6A7B5D6E28A6F76CE5A8E9D7C8B4A2F:FG=1",
+        "path": "/",
+        "expires": "2027-01-27T23:59:59.000Z"
+    },
+    {
+        "domain": ".baidu.com",
+        "name": "BIDUPSID",
+        "value": "B6A7B5D6E28A6F76CE5A8E9D7C8B4A2F",
+        "path": "/",
+        "expires": "2027-01-27T23:59:59.000Z"
+    },
+    {
+        "domain": ".baidu.com",
+        "name": "PSTM",
+        "value": "1706380800",
+        "path": "/",
+        "expires": "2027-01-27T23:59:59.000Z"
+    },
+    {
+        "domain": ".baidu.com",
+        "name": "BD_HOME",
+        "value": "1",
+        "path": "/",
+        "expires": "2027-01-27T23:59:59.000Z"
+    }
+]
+

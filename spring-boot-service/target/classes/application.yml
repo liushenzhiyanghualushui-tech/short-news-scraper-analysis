@@ -1,0 +1,91 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: news-scraper-springboot
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:news_scraper}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8mb4
+    username: ${MYSQL_USER:root}
+    password: ${MYSQL_PASSWORD:123580}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      idle-timeout: 300000
+      connection-timeout: 20000
+      max-lifetime: 1200000
+  jpa:
+    hibernate:
+      ddl-auto: none  # 使用SQL脚本管理表结构
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+    open-in-view: false
+
+  # 虚拟线程支持 (Java 21)
+  threads:
+    virtual:
+      enabled: true
+
+# 日志
+logging:
+  level:
+    root: INFO
+    com.news: DEBUG
+    com.news.scraper: INFO
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+# Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+
+# FastAPI 内部地址
+fastapi:
+  base-url: ${FASTAPI_BASE_URL:http://localhost:8000}
+  connect-timeout: 10s
+  read-timeout: 600s
+
+# 爬虫配置
+scraper:
+  # 全局并发限制
+  max-concurrent-scrapers: 20
+  # 默认超时 (秒)
+  default-timeout: 300
+  # 重试次数
+  max-retries: 3
+  # 请求间隔基础值 (毫秒)
+  base-delay-ms: 1000
+  # 按来源的独立配置 (在数据库 scraper_sources 表中管理)
+  sources:
+    sina:
+      concurrent-limit: 50
+      rate-limit-ms: 1500
+    tencent:
+      concurrent-limit: 40
+      rate-limit-ms: 2000
+    chinanews:
+      concurrent-limit: 30
+      rate-limit-ms: 2000
+    netease:
+      concurrent-limit: 40
+      rate-limit-ms: 1500
+    pengpai:
+      concurrent-limit: 30
+      rate-limit-ms: 2500
+
+# SpringDoc OpenAPI
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
