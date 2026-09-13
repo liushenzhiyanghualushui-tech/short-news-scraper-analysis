@@ -39,7 +39,7 @@ services:
   # ==================== FastAPI AI/爬虫服务 ====================
   fastapi:
     build:
-      context: ./fastapi-service
+      context: ./backend/fastapi-service
       dockerfile: Dockerfile
     container_name: news-fastapi
     restart: unless-stopped
@@ -56,9 +56,8 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./fastapi-service:/app
+      - ./backend/fastapi-service:/app
       - saved_models:/app/saved_models
-      - ./scrapers:/app/scrapers:ro
     depends_on:
       mysql:
         condition: service_healthy
@@ -74,7 +73,7 @@ services:
   # ==================== Spring Boot 业务中台 ====================
   spring-boot:
     build:
-      context: ./spring-boot-service
+      context: ./backend/spring-boot-service
       dockerfile: Dockerfile
     container_name: news-springboot
     restart: unless-stopped
@@ -106,7 +105,7 @@ services:
   # ==================== Vue + Nginx 前端 ====================
   frontend:
     build:
-      context: ./vue-frontend
+      context: ./frontend/vue-frontend
       dockerfile: Dockerfile
       args:
         - VITE_API_BASE_URL=/api

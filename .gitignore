@@ -111,6 +111,20 @@ temp/
 *.tmp
 *.bak
 
+# ===== 重构后的目录结构 =====
+# 后端模块
+backend/fastapi-service/__pycache__/
+backend/fastapi-service/*.pyc
+backend/fastapi-service/.venv/
+backend/fastapi-service/domain/__pycache__/
+backend/fastapi-service/domain/*.pyc
+backend/spring-boot-service/target/
+backend/spring-boot-service/*.class
+
+# 前端模块
+frontend/vue-frontend/node_modules/
+frontend/vue-frontend/dist/
+
 # ===== Docker =====
 .dockerignore
 

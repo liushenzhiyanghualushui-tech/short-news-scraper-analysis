@@ -623,9 +623,9 @@ Get-Content ".gitignore" | Select-String "backend"
 
 ### 9.6 完成条件
 
-- [ ] `docker-compose.yml` 已更新为新路径
-- [ ] `.gitignore` 已更新
-- [ ] Docker 配置验证通过
+- [x] `docker-compose.yml` 已更新为新路径
+- [x] `.gitignore` 已更新
+- [x] Docker 配置验证通过
 
 ---
 
@@ -700,8 +700,9 @@ docker-compose logs -f
 
 ### 10.3 完成条件
 
-- [ ] Git 状态显示正确的变更
-- [ ] 目录结构符合预期
+- [x] Git 状态显示正确的变更
+- [x] 目录结构符合预期
+- [x] Docker 配置验证通过
 - [ ] Docker 构建成功
 - [ ] 所有服务正常启动
 - [ ] 核心功能可访问
@@ -972,3 +973,4 @@ docker-compose down            # 停止
 |----------|----------|--------|
 | 2026-09-13 | 创建迁移计划文档 | AI |
 | 2026-09-13 | 新增 Docker 一键启动工程化方案，新增 Phase 0 移除遗留启动程序 | AI |
+| 2026-09-13 | 完成阶段0-6：重组项目目录结构，迁移至 backend/frontend 分层架构 | AI |
