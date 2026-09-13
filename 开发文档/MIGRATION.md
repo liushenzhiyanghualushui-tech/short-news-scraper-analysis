@@ -515,12 +515,12 @@ Test-Path frontend\vue-frontend\package.json
 
 ### 8.5 完成条件
 
-- [ ] `api/` 目录已删除
-- [ ] `static/` 目录已删除
-- [ ] `templates/` 目录已删除
-- [ ] `app.py` 已删除
-- [ ] `config.json` 已删除
-- [ ] 核心服务文件仍存在
+- [x] `api/` 目录已删除
+- [x] `static/` 目录已删除
+- [x] `templates/` 目录已删除
+- [x] `app.py` 已删除
+- [x] `config.json` 已删除
+- [x] 核心服务文件仍存在
 
 ---
 
