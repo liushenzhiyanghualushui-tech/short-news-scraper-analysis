@@ -41,6 +41,10 @@ function truncate(text: string, len = 80) {
   return text.length > len ? text.slice(0, len) + '...' : text
 }
 
+function openUrl(url: string) {
+  window.open(url, '_blank')
+}
+
 onMounted(fetchNews)
 </script>
 
@@ -77,7 +81,7 @@ onMounted(fetchNews)
         </el-table-column>
         <el-table-column label="操作" width="120" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" @click="window.open(row.url, '_blank')">原文</el-button>
+            <el-button link type="primary" @click="openUrl(row.url)">原文</el-button>
           </template>
         </el-table-column>
       </el-table>

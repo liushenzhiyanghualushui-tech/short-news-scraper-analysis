@@ -113,8 +113,8 @@ public class ScraperOrchestrator {
 
         long duration = (System.currentTimeMillis() - startTime) / 1000;
         long totalItems = results.values().stream()
-                .filter(m -> m.containsKey("items_count"))
-                .mapToLong(m -> ((Number) m.get("items_count")).longValue())
+                .filter(m -> m instanceof Map && ((Map<?, ?>) m).containsKey("items_count"))
+                .mapToLong(m -> ((Number) ((Map<?, ?>) m).get("items_count")).longValue())
                 .sum();
 
         results.put("_total_duration_seconds", duration);

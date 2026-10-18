@@ -47,8 +47,10 @@ async def start_spider(
     """
     from services.scraper_service import run_python_scraper
     
-    if spider_name in _running_spiders:
-        raise HTTPException(400, f"爬虫 {spider_name} 已在运行中")
+    # 只检查是否正在运行或启动中，不检查已完成或失败的
+    current_status = _running_spiders.get(spider_name)
+    if current_status in ("running", "starting"):
+        raise HTTPException(400, f"爬虫 {spider_name} 正在运行中")
     
     _running_spiders[spider_name] = "starting"
     

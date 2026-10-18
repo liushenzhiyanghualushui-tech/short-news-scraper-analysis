@@ -13,12 +13,16 @@ with open(config_path, 'r', encoding='utf-8') as f:
 
 db_config = config.get('database', {})
 
+# 表前缀（默认空，表名不带前缀）
+table_prefix = db_config.get('table_prefix', '')
+
 print("=" * 50)
 print("数据库验证工具")
 print("=" * 50)
 print(f"数据库: {db_config.get('name')}")
 print(f"主机: {db_config.get('host')}")
 print(f"端口: {db_config.get('port')}")
+print(f"表前缀: '{table_prefix}'")
 print("=" * 50)
 
 try:
@@ -32,8 +36,6 @@ try:
     )
 
     with conn.cursor() as cursor:
-        table_prefix = db_config.get('table_prefix', 'scraper_')
-        
         # 1. 验证 category 列
         cursor.execute(f'SHOW COLUMNS FROM {table_prefix}raw_articles LIKE "category"')
         result = cursor.fetchone()

@@ -7,10 +7,10 @@ import java.time.LocalDateTime;
 
 /**
  * 原始文章实体
- * 对应 scraper_raw_articles 表
+ * 对应 raw_articles 表
  */
 @Entity
-@Table(name = "scraper_raw_articles")
+@Table(name = "raw_articles")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -64,7 +64,7 @@ public class RawArticle {
     @Column(name = "platform_id")
     private Integer platformId;
 
-    @Column(name = "rank")
+    @Column(name = "rank_value")
     private Integer rank;
 
     @Column(name = "crawl_time", nullable = false)

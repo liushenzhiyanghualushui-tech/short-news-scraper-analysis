@@ -74,16 +74,6 @@ class NeteaseScraper(BaseScraper):
         start_time = time.time()
         
         try:
-            # 确保数据库表已初始化
-            self.db.init_database()
-            
-            # 初始化源信息
-            self.db.init_sources([{
-                "source_type": "domestic",
-                "name": self.source_name,
-                "code": self.source_code
-            }])
-            
             # 运行异步任务
             count = asyncio.run(self._async_run())
             
@@ -313,15 +303,11 @@ class NeteaseScraper(BaseScraper):
     def _save_article(self, item: DomesticNewsItem) -> bool:
         """保存文章到数据库"""
         try:
-            # 保存到 domestic_news
-            saved = self.db.insert_domestic_news(item)
-            
-            # 同时保存到 raw_articles (如果需要)
+            # 保存到 raw_articles
             if self._source_id:
                 raw_item = RawArticleItem.from_domestic(item, self.source_code)
-                self.db.insert_raw_article(raw_item, self._source_id)
-                
-            return True # 只要没有异常就算成功，因为 insert_domestic_news 可能会因为重复返回 False，但我们已经检查过重复了
+                return self.db.insert_raw_article(raw_item, self._source_id)
+            return False
         except Exception as e:
             self.logger.error(f"入库失败: {e}")
             return False

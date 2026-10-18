@@ -3,8 +3,6 @@
 # 一键启动完整系统（MySQL + FastAPI + Spring Boot + Vue/Nginx）
 # ============================================
 
-version: "3.9"
-
 services:
   # ==================== MySQL 数据库 ====================
   mysql:
@@ -100,17 +98,22 @@ services:
     container_name: news-springboot
     restart: unless-stopped
     environment:
-      # 数据源配置
-      - SPRING_DATASOURCE_URL=jdbc:mysql://${DB_HOST:-mysql}:${DB_PORT:-3306}/${MYSQL_DATABASE:-news_scraper}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8mb4&connectionAttributes=none&connectTimeout=30000&socketTimeout=60000
+      # 数据源配置 (使用 MYSQL_HOST 环境变量)
+      - MYSQL_HOST=${DB_HOST:-mysql}
+      - MYSQL_PORT=${DB_PORT:-3306}
+      - MYSQL_DATABASE=${MYSQL_DATABASE:-news_scraper}
+      - MYSQL_USER=${DB_USERNAME:-newsapp}
+      - MYSQL_PASSWORD=${DB_PASSWORD}
+      - SPRING_DATASOURCE_URL=jdbc:mysql://${DB_HOST:-mysql}:${DB_PORT:-3306}/${MYSQL_DATABASE:-news_scraper}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&characterEncoding=UTF-8&connectionAttributes=none&connectTimeout=30000&socketTimeout=60000
       - SPRING_DATASOURCE_USERNAME=${DB_USERNAME:-newsapp}
       - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
       - SPRING_DATASOURCE_DRIVER_CLASS_NAME=com.mysql.cj.jdbc.Driver
-      # 连接池配置
-      - SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE=20
-      - SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE=5
-      - SPRING_DATASOURCE_HIKARI_CONNECTION_TIMEOUT=30000
-      - SPRING_DATASOURCE_HIKARI_IDLE_TIMEOUT=600000
-      - SPRING_DATASOURCE_HIKARI_MAX_LIFETIME=1800000
+      # HikariCP 连接池配置 (正确的 Relaxed Binding 前缀)
+      - SPRING_DATASOURCE_HIKARI_MAX-POOL-SIZE=20
+      - SPRING_DATASOURCE_HIKARI_MIN-IDLE=5
+      - SPRING_DATASOURCE_HIKARI_CONNECTION-TIMEOUT=30000
+      - SPRING_DATASOURCE_HIKARI_IDLE-TIMEOUT=600000
+      - SPRING_DATASOURCE_HIKARI_MAX-LIFETIME=1800000
       # FastAPI 服务配置
       - FASTAPI_BASE_URL=http://fastapi:8000
       - FASTAPI_API_KEY=${FASTAPI_API_KEY}

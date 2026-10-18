@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
  * 对应 scraper_spider_logs 表
  */
 @Entity
-@Table(name = "scraper_spider_logs")
+@Table(name = "spider_logs")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

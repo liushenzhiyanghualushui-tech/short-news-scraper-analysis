@@ -6,6 +6,8 @@ import com.news.service.NewsService;
 import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 /**
  * 新闻管理 API
  */
@@ -20,7 +22,7 @@ public class NewsController {
     }
 
     @GetMapping("/list")
-    public ApiResponse<Page<RawArticle>> listArticles(
+    public ApiResponse<List<RawArticle>> listArticles(
             @RequestParam(defaultValue = "") String sourceCode,
             @RequestParam(defaultValue = "") String category,
             @RequestParam(defaultValue = "") String keyword,

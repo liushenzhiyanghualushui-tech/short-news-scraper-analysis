@@ -75,7 +75,7 @@ async function runAllScrapers() {
         <span>📊 来源分布统计</span>
       </template>
       <el-table :data="store.stats?.by_source ? 
-        Object.entries(store.stats.by_source).map(([k,v]) => ({code: k, ...v})) : []" 
+        Object.entries(store.stats.by_source).map(([k, v]) => ({ code: k, ...Object(v) })) : []" 
         stripe size="small">
         <el-table-column prop="code" label="来源" width="120" />
         <el-table-column prop="name" label="名称" width="150" />

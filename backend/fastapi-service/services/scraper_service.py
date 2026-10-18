@@ -11,10 +11,10 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# 确保scrapers目录在路径中
-SCRAPERS_DIR = os.path.join(os.path.dirname(__file__), "..", "scrapers")
-if SCRAPERS_DIR not in sys.path:
-    sys.path.insert(0, SCRAPERS_DIR)
+# 确保domain目录在路径中 (scrapers 模块在 domain/ 下)
+DOMAIN_DIR = os.path.join(os.path.dirname(__file__), "..", "domain")
+if DOMAIN_DIR not in sys.path:
+    sys.path.insert(0, DOMAIN_DIR)
 
 
 # 爬虫注册表: 定义哪些爬虫由Python执行（重型/浏览器爬虫）
@@ -88,8 +88,8 @@ def run_python_scraper(spider_name: str):
         dict: 执行结果 {success, items_count, duration, error}
     """
     import time
-    from scrapers.db import DBHandler
-    from scrapers.config import load_config
+    from domain.scrapers.db import DBHandler
+    from domain.scrapers.config import load_config, update_config
 
     start_time = time.time()
 
@@ -105,9 +105,21 @@ def run_python_scraper(spider_name: str):
 
     logger.info(f"🚀 启动爬虫: {scraper_info['label']} ({spider_name})")
 
-    # 加载配置
+    # 加载配置，并使用环境变量覆盖
     config = load_config()
-    db_config = config.get("database", {})
+    
+    # 使用环境变量覆盖数据库配置
+    db_config = {
+        "host": os.getenv("DB_HOST", config.get("database", {}).get("host", "localhost")),
+        "port": int(os.getenv("DB_PORT", config.get("database", {}).get("port", 3306))),
+        "username": os.getenv("DB_USER", config.get("database", {}).get("username", "root")),
+        "password": os.getenv("DB_PASSWORD", config.get("database", {}).get("password", "")),
+        "name": os.getenv("DB_NAME", config.get("database", {}).get("name", "news_scraper")),
+        "charset": "utf8mb4"
+    }
+    
+    # 更新配置中的数据库设置
+    config["database"] = db_config
     db = DBHandler(db_config)
 
     # 记录日志
@@ -115,20 +127,44 @@ def run_python_scraper(spider_name: str):
 
     try:
         # 动态导入并实例化爬虫
-        from scrapers import create_spider
-        spider = create_spider(spider_name)
+        from domain.scrapers import create_spider
+        spider = create_spider(spider_name, config, db)
 
         if spider is None:
             # 回退：尝试直接实例化
-            module_path = f"scrapers.{scraper_info['module']}"
+            module_path = f"domain.scrapers.{scraper_info['module']}"
             class_name = scraper_info["class_name"]
             import importlib
             mod = importlib.import_module(module_path)
             spider_cls = getattr(mod, class_name)
-            spider = spider_cls()
+            # 回退方式也需要传入参数
+            try:
+                spider = spider_cls(config, db)
+            except TypeError:
+                # 部分爬虫可能不需要参数
+                spider = spider_cls()
 
         # 执行爬虫
-        items = spider.run()
+        import asyncio
+        try:
+            # 检查爬虫是否有异步方法
+            if hasattr(spider, '_async_run'):
+                # 使用现有事件循环运行异步爬虫
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    # 如果已经有运行中的事件循环，创建新任务
+                    items = asyncio.create_task(spider._async_run())
+                    # 暂时不支持这种方式，使用线程
+                    import concurrent.futures
+                    with concurrent.futures.ThreadPoolExecutor() as executor:
+                        items = executor.submit(asyncio.run, spider._async_run()).result()
+                else:
+                    items = loop.run_until_complete(spider._async_run())
+            else:
+                items = spider.run()
+        except TypeError as e:
+            # 可能是同步方法但传递了错误参数
+            items = spider.run()
 
         duration = int(time.time() - start_time)
         db.log_spider_end(log_id, "success", len(items) if items else 0)

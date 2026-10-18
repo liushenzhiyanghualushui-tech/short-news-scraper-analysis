@@ -90,9 +90,7 @@ class XinhuaScraper(BaseScraper):
         self.cookie_pool = [] # Cookie池 (模拟)
         self._raw_exists_cache: Dict[str, bool] = {}
         self._raw_exists_order = deque()
-        self._xinhua_exists_cache: Dict[str, bool] = {}
-        self._xinhua_exists_order = deque()
-        
+
         # 统计
         self.stats = {
             "total": 0,
@@ -125,33 +123,14 @@ class XinhuaScraper(BaseScraper):
 
     async def _async_run(self) -> int:
         """异步执行主逻辑"""
-        try:
-            self.db.init_sources([{
-                "source_type": "domestic",
-                "name": self.source_name,
-                "code": self.source_code
-            }])
-        except Exception:
-            pass
-
         source = self.db.get_source_by_code(self.source_code)
         self._source_id = source["id"] if source else 0
-        if self._source_id:
-            try:
-                inserted = self.db.sync_xinhua_news_to_raw_articles(self._source_id, limit=1000)
-                if inserted:
-                    self.logger.info(f"已同步历史新华网数据到展示表: {inserted} 条")
-            except Exception:
-                pass
 
         # 获取频道列表
-        channels = self.db.get_xinhua_channels()
-        if not channels:
-            self.logger.warning("未找到频道配置，使用默认频道")
-            channels = [
-                {"name": "时政", "url": "http://www.news.cn/politics/", "code": "politics"},
-                {"name": "国际", "url": "http://www.news.cn/world/", "code": "world"},
-            ]
+        channels = [
+            {"name": "时政", "url": "http://www.news.cn/politics/", "code": "politics"},
+            {"name": "国际", "url": "http://www.news.cn/world/", "code": "world"},
+        ]
 
         async with aiohttp.ClientSession() as session:
             tasks = []
@@ -432,36 +411,6 @@ class XinhuaScraper(BaseScraper):
             self._mark_crawled(url)
             return
 
-        if self._cached_xinhua_url_exists(url):
-            if self._source_id:
-                if not self._can_accept_success():
-                    self.stop_event.set()
-                    self._mark_crawled(url)
-                    return
-                row = self.db.get_xinhua_news_by_url(url)
-                if row:
-                    raw_item = self._raw_item_from_xinhua_row(row)
-                    try:
-                        loop = asyncio.get_running_loop()
-                        saved_raw = await loop.run_in_executor(None, self.db.insert_raw_article, raw_item, self._source_id)
-                    except RuntimeError:
-                        saved_raw = self.db.insert_raw_article(raw_item, self._source_id)
-
-                    if saved_raw:
-                        if not self._commit_success(synced=True):
-                            self.stop_event.set()
-                            self._mark_crawled(url)
-                            return
-                        SPIDER_ITEMS_TOTAL.labels(status='success').inc()
-                        self._mark_crawled(url)
-                        self._raw_exists_cache[url] = True
-                        self._raw_exists_order.append(url)
-                        self._evict_exists_cache(self._raw_exists_cache, self._raw_exists_order)
-                        return
-
-            self.stats["duplicate"] += 1
-            return
-
         html = await self._fetch(session, url)
         if not html:
             self.stats["failed"] += 1
@@ -488,9 +437,9 @@ class XinhuaScraper(BaseScraper):
                         return
                     SPIDER_ITEMS_TOTAL.labels(status='success').inc()
                     self._mark_crawled(url)
-                    self._xinhua_exists_cache[url] = True
-                    self._xinhua_exists_order.append(url)
-                    self._evict_exists_cache(self._xinhua_exists_cache, self._xinhua_exists_order)
+                    self._raw_exists_cache[url] = True
+                    self._raw_exists_order.append(url)
+                    self._evict_exists_cache(self._raw_exists_cache, self._raw_exists_order)
                 else:
                     self.stats["failed"] += 1
             else:
@@ -589,13 +538,11 @@ class XinhuaScraper(BaseScraper):
         return
 
     def _save_article(self, item: XinhuaNewsItem) -> bool:
-        saved_xinhua = self.db.insert_xinhua_news(item)
+        """保存文章到 raw_articles"""
         if not self._source_id:
-            return saved_xinhua
-
+            return False
         raw_item = self._raw_item_from_xinhua_item(item)
-        saved_raw = self.db.insert_raw_article(raw_item, self._source_id)
-        return saved_xinhua or saved_raw
+        return self.db.insert_raw_article(raw_item, self._source_id)
 
     def _raw_item_from_xinhua_item(self, item: XinhuaNewsItem) -> RawArticleItem:
         return RawArticleItem(
@@ -703,15 +650,6 @@ class XinhuaScraper(BaseScraper):
         self._evict_exists_cache(self._raw_exists_cache, self._raw_exists_order)
         return exists
 
-    def _cached_xinhua_url_exists(self, url: str) -> bool:
-        if url in self._xinhua_exists_cache:
-            return self._xinhua_exists_cache[url]
-        exists = bool(self.db.xinhua_url_exists(url))
-        self._xinhua_exists_cache[url] = exists
-        self._xinhua_exists_order.append(url)
-        self._evict_exists_cache(self._xinhua_exists_cache, self._xinhua_exists_order)
-        return exists
-
     def _evict_exists_cache(self, cache: Dict[str, bool], order: deque):
         if self.exists_cache_size <= 0:
             cache.clear()
@@ -750,10 +688,9 @@ class XinhuaScraper(BaseScraper):
     def _is_duplicate(self, url: str) -> bool:
         """去重逻辑"""
         # 1. 内存去重
-        if url in self.crawled_urls: return True
-        if self.db.url_exists(url):
+        if url in self.crawled_urls:
             return True
-        return self.db.xinhua_url_exists(url)
+        return self.db.url_exists(url)
 
     def _mark_crawled(self, url: str):
         self.crawled_urls.add(url)
@@ -883,15 +820,6 @@ class XinhuaChannelDiscoverScraper(XinhuaScraper):
         seeds = []
         if isinstance(self.discover_seeds, list):
             seeds.extend([s for s in self.discover_seeds if isinstance(s, str) and s.strip()])
-
-        try:
-            channels = self.db.get_xinhua_channels() or []
-            for ch in channels:
-                u = ch.get("url")
-                if isinstance(u, str) and u.strip():
-                    seeds.append(u.strip())
-        except Exception:
-            pass
 
         seeds.append(self.base_url)
         unique = []

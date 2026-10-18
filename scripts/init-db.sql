@@ -66,7 +66,7 @@ CREATE TABLE IF NOT EXISTS raw_articles (
     INDEX idx_crawl_time (crawl_time),
     INDEX idx_status (status),
     INDEX idx_title (title(100)),
-    UNIQUE INDEX idx_url (url),
+    UNIQUE INDEX idx_url (url(255)),
     
     -- 外键约束
     CONSTRAINT fk_article_source FOREIGN KEY (source_id) 

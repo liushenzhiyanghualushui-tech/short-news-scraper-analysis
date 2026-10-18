@@ -5,7 +5,7 @@ database:
   password: '123580'
   name: news_scraper
   charset: utf8mb4
-  table_prefix: scraper_
+  # table_prefix 已废弃，表名不再使用前缀
 scraper:
   request_delay: 2
   timeout: 10

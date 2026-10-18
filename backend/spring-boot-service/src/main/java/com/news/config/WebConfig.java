@@ -7,6 +7,7 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+import java.time.Duration;
 import java.util.concurrent.Executors;
 
 /**
@@ -16,6 +17,12 @@ import java.util.concurrent.Executors;
 @Configuration
 @EnableAsync
 public class WebConfig implements WebMvcConfigurer {
+
+    private final FastApiConfig fastApiConfig;
+
+    public WebConfig(FastApiConfig fastApiConfig) {
+        this.fastApiConfig = fastApiConfig;
+    }
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
@@ -37,9 +44,13 @@ public class WebConfig implements WebMvcConfigurer {
 
     /**
      * RestClient Bean - 用于调用 FastAPI 服务
+     * 使用 FastApiConfig 中定义的连接和读取超时
      */
     @Bean
     public RestClient restClient(RestClient.Builder builder) {
-        return builder.build();
+        return builder
+                .connectTimeout(fastApiConfig.getConnectTimeout())
+                .readTimeout(fastApiConfig.getReadTimeout())
+                .build();
     }
 }

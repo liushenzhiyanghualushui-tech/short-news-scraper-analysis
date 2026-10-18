@@ -2,10 +2,18 @@
 # 阶段1: Maven构建
 FROM maven:3.9-eclipse-temurin-21 AS builder
 WORKDIR /build
+
+# 配置阿里云 Maven 镜像
+RUN mkdir -p /usr/share/maven/ref/conf && \
+    echo '<?xml version="1.0" encoding="UTF-8"?>' > /usr/share/maven/ref/conf/settings.xml && \
+    echo '<settings><mirrors><mirror><id>aliyun</id><name>Aliyun Maven</name><url>https://maven.aliyun.com/repository/public</url><mirrorOf>central</mirrorOf></mirror></mirrors></settings>' >> /usr/share/maven/ref/conf/settings.xml
+
+# 复制源码
 COPY pom.xml .
-RUN mvn dependency:go-offline -B
 COPY src ./src
-RUN mvn package -DskipTests -B
+
+# 使用镜像构建
+RUN mvn package -DskipTests -B -s /usr/share/maven/ref/conf/settings.xml -q
 
 # 阶段2: 运行镜像
 FROM eclipse-temurin:21-jre-alpine
